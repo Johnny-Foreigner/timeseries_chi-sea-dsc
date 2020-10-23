@@ -1,9 +1,5 @@
 
-# Time Series
-
-To begin, let's look at some time series data plots.
-
-The ** syntax is used to pass keywords and values in dictionary form to a function. For more on * and ** (*args and **kwargs), see this page.
+<a id='section_1'></a>
 
 # Time Series vs. Linear
 
@@ -11,7 +7,7 @@ For linear regression, we attempted to explain the variance of a continuous targ
 
 In time series models, we make the opposite assumption.  We assume that a given value can best be predicted by its **past values**.
 
-We replace our features with past values of our target. 
+The main idea with time series is to replace our independent features with past values of our target. 
 
 The models we will cover in lecture include endogenous variables.
 <em>Endogenous</em> means caused by factors within the system. 
@@ -22,7 +18,33 @@ Many statsmodels tools use <tt>endog</tt> to represent the incoming time series 
 
 For more information and a nice **mneumonic**, visit http://www.statsmodels.org/stable/endog_exog.html
 
-# Datetime objects
+Time series analysis has many applications.  With new methods of personalized data collection, the opportunity for time series analysis is growing.  Take health care,  where new wearable technology is producing individualized records of medical data. With a smartwatch or phone, heartrate, bloodpressure, sleep and activity records, can all be recorded easily. All of these datapoints can be timestamped precisely, and easily exported for analysis.
+
+There is also plenty of opportunities to apply time series models in other fields.  In finance, time series data is plentiful, collected by both the government and private industry.  Data scientest can use financial data to build models not only for personal financial betterment, but for forecasting economic cycles and unemployment rate.
+
+# Time Series
+
+## Agenda
+
+1. [Time Series Models vs. Linear Models](#section_1)
+2. [Date Time Objects](#section_2)
+3. [Time Series Preprocessing Techniques](#section_3)
+ - [Resampling](#resampling)
+ - Interpolating
+4. [Visual Diagnostics](#moving_avg)
+ - Moving Average and Exponentially Weighted Moving Average
+5. [Components of Time Series Data and Stationarity](#stationarity)
+ - Decomposition
+ - Dickey-Fuller
+    
+
+To begin, let's look at some time series data plots.
+
+The ** syntax is used to pass keywords and values in dictionary form to a function. For more on * and ** (*args and **kwargs), see this page.
+
+<a id='section_2'></a>
+
+# 2: Datetime objects
 
 Datetime objects make our time series modeling lives easier.  They will allow us to perform essential data prep tasks with a few lines of code.  
 
@@ -35,7 +57,27 @@ Let's import some data on **gun violence in Chicago**.
 
 [source](https://data.cityofchicago.org/Public-Safety/Gun-Crimes-Heat-Map/iinq-m3rg)
 
+
+```python
+ts = pd.read_csv('data/Gun_Crimes_Heat_Map.csv')
+```
+
 Let's look at some summary stats:
+
+
+```python
+ts['Description'].value_counts()
+```
+
+
+```python
+ts.Domestic.value_counts()[1]/len(ts)
+```
+
+
+```python
+arrest_rate = ts['Arrest'].value_counts()[1]/len(ts)
+```
 
 The data extracts the year of offense as its own columns.
 
@@ -49,22 +91,103 @@ There are a few ways to **reindex** our series to datetime.
 
 We can use the pd.to_datetime() method
 
+
+```python
+ts.set_index(pd.to_datetime(ts['Date']), drop=True, inplace=True)
+```
+
 Or, we can parse the dates directly on import
 
 We've covered some of the fun abilities of datetime objects, including being able to extract components of the date like so:
+
+
+```python
+ts.index[0].month
+```
+
+
+```python
+ts.index[0].year
+```
+
+
+```python
+ts.index?
+```
 
 We can easily see now see whether offenses happen, for example, during business hours.
 
 
 ### With a partner, take five minutes ot play around with the datetime object, and make a plot that answers a time based question about our data.
 
+
+```python
+ts['dow'] = ts.index
+
+# 0 aligns with Monday
+ts['dow'] = ts.dow.apply(lambda x: x.dayofweek)
+
+x = ts.dow.value_counts(sort=False).index
+
+height = ts.dow.value_counts(sort=False)
+
+fig, ax = plt.subplots()
+
+sns.barplot(x, height, color='r', ax=ax)
+ax.set_title('Gun Crime Across the Months')
+ax.set_ylabel('Gun Crime Count')
+ax.set_xlabel('Day of Week')
+ax.set_xticklabels(['M', 'T', 'W', 'Th', 'F', 'Sa', 'Su']);
+```
+
+
+```python
+ts['quarter'] = ts.index
+ts['quarter'] = ts.quarter.apply(lambda x: x.quarter)
+
+x = ts.quarter.value_counts(sort=False).index
+
+height = ts.quarter.value_counts(sort=False)
+
+fig, ax = plt.subplots()
+
+sns.barplot(x, height, color='r', ax=ax)
+ax.set_title('Gun Crime Across Quarters')
+ax.set_ylabel('Gun Crime Count')
+ax.set_xlabel('Quarter')
+
+```
+
+
+```python
+ts['month'] = ts.index
+ts['month'] = ts.month.apply(lambda x: x.month)
+
+
+x = ts.month.value_counts(sort=False).index
+
+height = ts.month.value_counts(sort=False)
+
+fig, ax = plt.subplots()
+
+sns.barplot(x, height, color='r', ax=ax)
+ax.set_title('Gun Crime Across the Months')
+ax.set_ylabel('Gun Crime Count')
+ax.set_xlabel('Month')
+```
+
 ![pair](https://media.giphy.com/media/SvulfW0MQncFYzQEMT/giphy.gif)
 
-We also have new abilities, such as **resampling**
+<a id='section_3'></a>
 
-To create our timeseries, we will count the number of gun offenses reported per day.
+# 3: Time Series Preprocessing Techniques
 
-Take a moment to familiarize yourself with the differnece resampling aliases
+<a id='resampling'></a>
+
+## Resampling
+We have new abilities, such as **resampling**
+
+Take a moment to familiarize yourself with the difference between resampling aliases
 
 <table style="display: inline-block">
     <caption style="text-align: center"><strong>TIME SERIES OFFSET ALIASES</strong></caption>
@@ -102,6 +225,13 @@ Take a moment to familiarize yourself with the differnece resampling aliases
 <tr><td>U, us</td><td>microseconds</td></tr>
 <tr><td>N</td><td>nanoseconds</td></tr></table>
 
+To create our timeseries, we will count the number of gun offenses reported per day.
+
+
+```python
+ts.resample('D')
+```
+
 When resampling, we have to provide a rule to resample by, and an **aggregate function**.
 
 **To upsample** is to increase the frequency of the data of interest.  
@@ -110,6 +240,11 @@ When resampling, we have to provide a rule to resample by, and an **aggregate fu
 For our purposes, we will downsample, and  count the number of occurences per day.
 
 Our time series will consist of a series of counts of gun reports per day.
+
+
+```python
+ts_day = ts.resample('D').count()['ID']
+```
 
 Let's visualize our timeseries with a plot.
 
@@ -121,21 +256,48 @@ Let's treat the span of days from 5-31 to 6-03 as outliers.
 
 There are several ways to do this, but let's first remove the outliers, and populate an an empty array with the original date range.  That will introduce us to the pd.date_range method.
 
-Now let's sp
-
 Let's zoom in on that week again
 
 The datetime object allows us several options of how to fill those gaps:
 
-Let's proceed with the interpolated data
+## Forward Fill
 
-Let's begin considering some models for our data.
 
-These are not useful for prediction just yet, but they will lead us towards our prediction models.
+```python
+# Forward Fill
+# Take the date range above and call the ffill() method
+ts_day[(ts_day.index > '2020-05-20') 
+                 & (ts_day.index < '2020-06-07')].ffill()
+```
 
-Now that we've cleaned up a few data points, let's downsample to the week level.  
+## Backward Fill
 
-# Visual Diagnostics with SMA and EWMA
+
+```python
+ts_day[(ts_day.index > '2020-05-20') 
+                 & (ts_day.index < '2020-06-07')].bfill()
+```
+
+# Interpolate 
+Fills the values according to a specified method. The default linear, assumes the data area evenly spaced along the line connecting the real values surrounding the NaN values.
+
+
+```python
+ts_day[(ts_day.index > '2020-05-20') 
+                 & (ts_day.index < '2020-06-07')].interpolate()
+```
+
+<a id='moving_avg'></a>
+
+# SMA and EWMA
+
+We could also proceed by smoothing our data.
+
+- Smoothing is replacing the measured value on each day with an average of a moving window across near values.  Applying smoothing, with for example a simple moving average an exponentially weighted average, can be used to minimize the effect of outliers. It can then serve as an alternative to dropping outliers to reduce measurement spikes and errors of measurement (Practical Time Series Analysis, Nielson, p. 55)
+
+- Moving averages can also provide a clearer picture of trends in noisy data. 
+
+
 
 # Simple Moving Average
 
@@ -145,15 +307,18 @@ The datetime index allows us to calculate simple moving averages via the rolling
 
 The rolling function calculates a statistic across a moving **window**, which we can change with the window paraamter.
 
-Let's calculate a month long moving average
 
-This is simply the avarage of a datapoint and the previous three data points:
+```python
+ts_to_smooth.rolling(window=7)
+```
 
-As we can see from the plot below, simple moving average **smooths** out the series. Smoothing can help visualize the underlying pattern.  It can also be a very simple predictive model, where we just project the mean out into the future.
+The rolling method requires we specify an aggregate function. For moving average, we call mean.
 
-The simple moving avereage tracks fairly well, but does not reach to the peaks and valleys of the original distribution.
+This is simply the avarage of a datapoint and the previous seven data points:
 
-If we plot the moving average across 52 weeeks, we can see a smooth trend across a year.  The SMA reaches back 52 weeks, shwing that the steepest growth of gun crime started around the beginning of 2016 and leveled out at the beginning of 2017.
+If we increase the window even more, the data **smooths** out in a way to help visualize the underlying seasonal pattern. 
+
+If we plot the moving average across 365 days, we can see a smooth trend across a year.  The SMA reaches back 365 weeks, showing that the steepest growth of gun crime started around the beginning of 2016 and leveled out at the beginning of 2017.
 
 # EWMA
 ## Exponentially Weighted Moving Average 
@@ -161,7 +326,15 @@ If we plot the moving average across 52 weeeks, we can see a smooth trend across
 An alternative to SMA is the EWMA. The exponentially weighted average gives more weight to the points closer to the date in question.  With EWMA, the average will track more closely to the peaks and valleys. If there are extreme historical values in the dataset, the EWMA will be less skewed than the SMA.
 
 
-$\large d^3 * X_{t-3} + d^2 * X_{t-2} + d^1 * X_{t-1}+ (1-d)*X_t$
+$\large X_{t} = \beta * X_{t-1} * (1-\beta)*X_t$
+
+Which after recursion, breaks resolves into:
+
+$\large \beta^3 * X_{t-3} + \beta^2 * X_{t-2} + \beta * X_{t-1}+ (1-\beta)*X_t$
+
+For this equation, X_t gives us an approximation of the last $1/(1-\beta)$ days.
+
+>Andrew Ng, [EWMA](https://www.coursera.org/learn/deep-neural-network/lecture/duStO/exponentially-weighted-averages)
 
 The higher the $\alpha$ parameter, the closer the EWMA will be to the actual value of the point.
 
@@ -173,6 +346,8 @@ We can also plot rolling averages for the variance and standard deviation.
 
 If we zoom in on our standard deviation, we can the variance of our data has quite a fluctuation at different moments in time.  When we are building our models, we will want to remove this variability, or our models will have different performance at different times.  We will be unable, then to be confident our model will perform well at an arbitrary point in the future.
 
+
+<a id='stationarity'></a>
 
 ### Components of Time Series Data
 A time series in general is supposed to be affected by four main components, which can be separated from the observed data. These components are: *Trend, Cyclical, Seasonal and Irregular* components.
@@ -186,6 +361,16 @@ A time series in general is supposed to be affected by four main components, whi
 *Note: Many people confuse cyclic behaviour with seasonal behaviour, but they are really quite different. If the fluctuations are not of fixed period then they are cyclic; if the period is unchanging and associated with some aspect of the calendar, then the pattern is seasonal.*
 
 The statsmodels seasonal decompose can also help show us the trends in our data.
+
+Our modeling will aim to predict the weekly gun crime counts.
+We will treat the outliers with interpolated interpolation.
+
+
+```python
+ts_weekly = ts_int.resample('W').mean()
+```
+
+We can now use the seasonal_decompose function to show trends the components of our time series.
 
 ### Statistical stationarity: 
 
@@ -224,6 +409,16 @@ A series of steps can be taken to stationarize your data - also known -  as remo
 
 One way to remove trends is to difference our data.  
 Differencing is performed by subtracting the previous observation (lag=1) from the current observation.
+
+
+```python
+ts_weekly.diff().dropna()[:5]
+```
+
+
+```python
+ts_weekly.diff().dropna().plot()
+```
 
 Sometimes, we have to difference the differenced data (known as a second difference) to achieve stationary data. <b>The number of times we have to difference our data is the order of differencing</b> - we will use this information when building our model.
 
