@@ -1,5 +1,42 @@
 
+<a id='section_1'></a>
+
+# Time Series vs. Linear
+
+For linear regression, we attempted to explain the variance of a continuous target variable via a set of **independent predictor features**. We assumed that there was no **autocorrelation** amongst our records.  In other words, we did not use the target variable of one row to predict that of another.
+
+In time series models, we make the opposite assumption.  We assume that a given value can best be predicted by its **past values**.
+
+The main idea with time series is to replace our independent features with past values of our target. 
+
+The models we will cover in lecture include endogenous variables.
+<em>Endogenous</em> means caused by factors within the system. 
+
+<em>Exogenous</em>, caused by factors outside the system. 
+
+Many statsmodels tools use <tt>endog</tt> to represent the incoming time series data in place of the constant <tt>y</tt>.<br>
+
+For more information and a nice **mneumonic**, visit http://www.statsmodels.org/stable/endog_exog.html
+
+Time series analysis has many applications.  With new methods of personalized data collection, the opportunity for time series analysis is growing.  Take health care,  where new wearable technology is producing individualized records of medical data. With a smartwatch or phone, heartrate, bloodpressure, sleep and activity records, can all be recorded easily. All of these datapoints can be timestamped precisely, and easily exported for analysis.
+
+There is also plenty of opportunities to apply time series models in other fields.  In finance, time series data is plentiful, collected by both the government and private industry.  Data scientest can use financial data to build models not only for personal financial betterment, but for forecasting economic cycles and unemployment rate.
+
 # Time Series
+
+## Agenda
+
+1. [Time Series Models vs. Linear Models](#section_1)
+2. [Date Time Objects](#section_2)
+3. [Time Series Preprocessing Techniques](#section_3)
+ - [Resampling](#resampling)
+ - Interpolating
+4. [Visual Diagnostics](#moving_avg)
+ - Moving Average and Exponentially Weighted Moving Average
+5. [Components of Time Series Data and Stationarity](#stationarity)
+ - Decomposition
+ - Dickey-Fuller
+    
 
 To begin, let's look at some time series data plots.
 
@@ -77,28 +114,9 @@ for i, trend_df in enumerate(trend_dfs):
     ax.set_xticks([tick for tick in ticks if tick%24 == 0])
 ```
 
+<a id='section_2'></a>
 
-![png](index_files/index_9_0.png)
-
-
-# Time Series vs. Linear
-
-For linear regression, we attempted to explain the variance of a continuous target variable via a set of **independent predictor features**. We assumed that there was no **autocorrelation** amongst our records.  In other words, we did not use the target variable of one row to predict that of another.
-
-In time series models, we make the opposite assumption.  We assume that a given value can best be predicted by its **past values**.
-
-We replace our features with past values of our target. 
-
-The models we will cover in lecture include endogenous variables.
-<em>Endogenous</em> means caused by factors within the system. 
-
-<em>Exogenous</em>, caused by factors outside the system. 
-
-Many statsmodels tools use <tt>endog</tt> to represent the incoming time series data in place of the constant <tt>y</tt>.<br>
-
-For more information and a nice **mneumonic**, visit http://www.statsmodels.org/stable/endog_exog.html
-
-# Datetime objects
+# 2: Datetime objects
 
 Datetime objects make our time series modeling lives easier.  They will allow us to perform essential data prep tasks with a few lines of code.  
 
@@ -113,185 +131,20 @@ Let's import some data on **gun violence in Chicago**.
 
 
 ```python
+# import the Gun_Crimes_Heat_Map.csv into a data frame
+ts = None
+```
+
+
+```python
+#__SOLUTION__
 ts = pd.read_csv('data/Gun_Crimes_Heat_Map.csv')
 ```
 
 
 ```python
-ts.head()
+# inspect the ts dataframe
 ```
-
-
-
-
-<div>
-<style scoped>
-    .dataframe tbody tr th:only-of-type {
-        vertical-align: middle;
-    }
-
-    .dataframe tbody tr th {
-        vertical-align: top;
-    }
-
-    .dataframe thead th {
-        text-align: right;
-    }
-</style>
-<table border="1" class="dataframe">
-  <thead>
-    <tr style="text-align: right;">
-      <th></th>
-      <th>ID</th>
-      <th>Case Number</th>
-      <th>Date</th>
-      <th>Block</th>
-      <th>IUCR</th>
-      <th>Primary Type</th>
-      <th>Description</th>
-      <th>Location Description</th>
-      <th>Arrest</th>
-      <th>Domestic</th>
-      <th>...</th>
-      <th>Ward</th>
-      <th>Community Area</th>
-      <th>FBI Code</th>
-      <th>X Coordinate</th>
-      <th>Y Coordinate</th>
-      <th>Year</th>
-      <th>Updated On</th>
-      <th>Latitude</th>
-      <th>Longitude</th>
-      <th>Location</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <th>0</th>
-      <td>11236423</td>
-      <td>JB159764</td>
-      <td>02/10/2018 08:00:00 AM</td>
-      <td>130XX S LANGLEY AVE</td>
-      <td>051A</td>
-      <td>ASSAULT</td>
-      <td>AGGRAVATED: HANDGUN</td>
-      <td>STREET</td>
-      <td>False</td>
-      <td>False</td>
-      <td>...</td>
-      <td>9.0</td>
-      <td>54</td>
-      <td>04A</td>
-      <td>NaN</td>
-      <td>NaN</td>
-      <td>2018</td>
-      <td>02/22/2018 03:58:56 PM</td>
-      <td>NaN</td>
-      <td>NaN</td>
-      <td>NaN</td>
-    </tr>
-    <tr>
-      <th>1</th>
-      <td>10568438</td>
-      <td>HZ316534</td>
-      <td>06/20/2016 10:18:00 PM</td>
-      <td>024XX E 71ST ST</td>
-      <td>031A</td>
-      <td>ROBBERY</td>
-      <td>ARMED: HANDGUN</td>
-      <td>SIDEWALK</td>
-      <td>False</td>
-      <td>False</td>
-      <td>...</td>
-      <td>7.0</td>
-      <td>43</td>
-      <td>03</td>
-      <td>NaN</td>
-      <td>NaN</td>
-      <td>2016</td>
-      <td>06/27/2016 03:51:44 PM</td>
-      <td>NaN</td>
-      <td>NaN</td>
-      <td>NaN</td>
-    </tr>
-    <tr>
-      <th>2</th>
-      <td>10394395</td>
-      <td>HY298019</td>
-      <td>06/11/2015 08:28:00 PM</td>
-      <td>058XX S UNION AVE</td>
-      <td>143A</td>
-      <td>WEAPONS VIOLATION</td>
-      <td>UNLAWFUL POSS OF HANDGUN</td>
-      <td>RESIDENCE</td>
-      <td>False</td>
-      <td>False</td>
-      <td>...</td>
-      <td>3.0</td>
-      <td>68</td>
-      <td>15</td>
-      <td>NaN</td>
-      <td>NaN</td>
-      <td>2015</td>
-      <td>07/22/2016 03:49:06 PM</td>
-      <td>NaN</td>
-      <td>NaN</td>
-      <td>NaN</td>
-    </tr>
-    <tr>
-      <th>3</th>
-      <td>10370206</td>
-      <td>HY400660</td>
-      <td>08/28/2015 11:06:00 AM</td>
-      <td>039XX W GRENSHAW ST</td>
-      <td>143A</td>
-      <td>WEAPONS VIOLATION</td>
-      <td>UNLAWFUL POSS OF HANDGUN</td>
-      <td>APARTMENT</td>
-      <td>False</td>
-      <td>False</td>
-      <td>...</td>
-      <td>24.0</td>
-      <td>29</td>
-      <td>15</td>
-      <td>NaN</td>
-      <td>NaN</td>
-      <td>2015</td>
-      <td>08/04/2016 03:52:47 PM</td>
-      <td>NaN</td>
-      <td>NaN</td>
-      <td>NaN</td>
-    </tr>
-    <tr>
-      <th>4</th>
-      <td>10300408</td>
-      <td>HY397968</td>
-      <td>08/26/2015 09:30:00 AM</td>
-      <td>041XX W MAYPOLE AVE</td>
-      <td>143A</td>
-      <td>WEAPONS VIOLATION</td>
-      <td>UNLAWFUL POSS OF HANDGUN</td>
-      <td>SIDEWALK</td>
-      <td>False</td>
-      <td>False</td>
-      <td>...</td>
-      <td>28.0</td>
-      <td>26</td>
-      <td>15</td>
-      <td>NaN</td>
-      <td>NaN</td>
-      <td>2015</td>
-      <td>06/17/2016 03:52:24 PM</td>
-      <td>NaN</td>
-      <td>NaN</td>
-      <td>NaN</td>
-    </tr>
-  </tbody>
-</table>
-<p>5 rows × 22 columns</p>
-</div>
-
-
 
 Let's look at some summary stats:
 
@@ -300,69 +153,21 @@ Let's look at some summary stats:
 print(f"There are {ts.shape[0]} records in our timeseries")
 ```
 
-    There are 85267 records in our timeseries
-
-
 
 ```python
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-# Definitely some messy input of our Desciption data
-ts['Description'].value_counts()
+# Let's look at the Description of the different types of reported events
+# There is some messy input in this data set.
+
 ```
 
 
-
-
-    AGGRAVATED: HANDGUN                              26622
-    ARMED: HANDGUN                                   22813
-    UNLAWFUL POSS OF HANDGUN                         19131
-    AGGRAVATED - HANDGUN                              3124
-    RECKLESS FIREARM DISCHARGE                        2944
-    UNLAWFUL USE HANDGUN                              2396
-    ATTEMPT: ARMED-HANDGUN                            1996
-    UNLAWFUL POSSESSION - HANDGUN                     1413
-    ARMED - HANDGUN                                    995
-    AGGRAVATED: OTHER FIREARM                          673
-    UNLAWFUL POSS OTHER FIREARM                        611
-    POSS FIREARM/AMMO:NO FOID CARD                     454
-    UNLAWFUL USE OTHER FIREARM                         405
-    ARMED: OTHER FIREARM                               302
-    AGGRAVATED PO: HANDGUN                             294
-    UNLAWFUL USE - HANDGUN                             260
-    AGG PRO.EMP: HANDGUN                               182
-    ATTEMPT ARMED - HANDGUN                            102
-    UNLAWFUL USE - OTHER FIREARM                       100
-    AGGRAVATED DOMESTIC BATTERY: HANDGUN                66
-    ATTEMPT: ARMED-OTHER FIREARM                        62
-    AGGRAVATED - OTHER FIREARM                          44
-    UNLAWFUL SALE HANDGUN                               40
-    AGGRAVATED POLICE OFFICER - HANDGUN                 38
-    ATTEMPT AGG: HANDGUN                                27
-    UNLAWFUL POSSESSION - OTHER FIREARM                 24
-    POSSESS FIREARM / AMMUNITION - NO FOID CARD         23
-    AGG PRO.EMP: OTHER FIREARM                          23
-    DEFACE IDENT MARKS OF FIREARM                       16
-    ARMED - OTHER FIREARM                               15
-    AGGRAVATED PO: OTHER FIREARM                        15
-    AGGRAVATED DOMESTIC BATTERY - HANDGUN               15
-    AGGRAVATED PROTECTED EMPLOYEE - HANDGUN             12
-    UNLAWFUL SALE OTHER FIREARM                          7
-    UNLAWFUL SALE/DELIVERY OF FIREARM AT SCHOOL          7
-    ATTEMPT ARMED - OTHER FIREARM                        3
-    DEFACE IDENTIFICATION MARKS OF FIREARM               3
-    AGGRAVATED PROTECTED EMPLOYEE - OTHER FIREARM        2
-    UNLAWFUL SALE - DELIVERY OF FIREARM AT SCHOOL        2
-    ATTEMPT AGGRAVATED - HANDGUN                         1
-    AGGRAVATED DOMESTIC BATTERY: OTHER FIREARM           1
-    AGGRAVATED DOMESTIC BATTERY - OTHER FIREARM          1
-    ATTEMPT ARMED: HANDGUN                               1
-    ATTEMPT AGG: OTHER FIREARM                           1
-    AGGRAVATED POLICE OFFICER - OTHER FIREARM            1
-    Name: Description, dtype: int64
-
-
+```python
+#__SOLUTION__
+ts['Description'].value_counts()
+```
 
 
 ```python
@@ -375,15 +180,16 @@ ax.set_title('Mostly Handgun offenses')
 ```
 
 
+```python
+# Let's look at the percentage of events that are related to domestic violence
+per_domestic_violence = None
+```
 
 
-    Text(0.5, 1.0, 'Mostly Handgun offenses')
-
-
-
-
-![png](index_files/index_23_1.png)
-
+```python
+#__SOLUTION__
+ts.Domestic.value_counts()[1]/len(ts)
+```
 
 
 ```python
@@ -399,13 +205,20 @@ ax.set_title("Overwhelmingly Non-Domestic Offenses");
 ```
 
 
-![png](index_files/index_24_0.png)
-
+```python
+# Look at the arrest rates
+arrest_rate = None
+```
 
 
 ```python
-# Mostly non-domestic offenses
+#__SOLUTION__
 arrest_rate = ts['Arrest'].value_counts()[1]/len(ts)
+```
+
+
+```python
+# Just above 30% of the arrests result in arrests
 
 fig, ax = plt.subplots()
 
@@ -414,19 +227,8 @@ sns.barplot( ts['Arrest'].value_counts().index,
              palette=['r', 'g'], ax=ax
            )
 
-ax.set_title(f'{arrest_rate: .2%} of Total Cases\n Result in Arrest')
+ax.set_title(f'{arrest_rate: .2%} of Total Cases\n Result in Arrest');
 ```
-
-
-
-
-    Text(0.5, 1.0, ' 30.78% of Total Cases\n Result in Arrest')
-
-
-
-
-![png](index_files/index_25_1.png)
-
 
 The data extracts the year of offense as its own columns.
 
@@ -441,10 +243,6 @@ sns.barplot( ts['Year'].value_counts().index,
 ax.set_title("Offenses By Year");
 ```
 
-
-![png](index_files/index_27_0.png)
-
-
 While this does show some interesting information that will be relevant to our time series analysis, we are going to get more granular.
 
 # Date Time Objects
@@ -456,15 +254,19 @@ For time series modeling, the first step is to make sure that the index is a dat
 print(f"The original data, if we import with standard read_csv, is a {type(ts.index)}")
 ```
 
-    The original data, if we import with standard read_csv, is a <class 'pandas.core.indexes.range.RangeIndex'>
-
-
 There are a few ways to **reindex** our series to datetime. 
 
 We can use the pd.to_datetime() method
 
 
 ```python
+# set_index to a datetime index.  
+# Set drop = True to drop the original index and inplace=True to modify the dataframe object. 
+```
+
+
+```python
+#__SOLUTION__
 ts.set_index(pd.to_datetime(ts['Date']), drop=True, inplace=True)
 ```
 
@@ -480,46 +282,61 @@ ts =  pd.read_csv('data/Gun_Crimes_Heat_Map.csv', index_col='Date', parse_dates=
 print(f"Now our index is a {type(ts.index)}")
 ```
 
-    Now our index is a <class 'pandas.core.indexes.datetimes.DatetimeIndex'>
-
-
 We've covered some of the fun abilities of datetime objects, including being able to extract components of the date like so:
 
 
 ```python
+# extract the month component from the index of the first record
+
+```
+
+
+```python
+#__SOLUTION__
 ts.index[0].month
 ```
 
 
+```python
+# extract the year
 
-
-    2
-
-
+```
 
 
 ```python
+#__SOLUTION__
 ts.index[0].year
 ```
 
 
+```python
+# There are so many cool attributes and methods.  How can we inspect them? Use the ?
+
+```
 
 
-    2018
-
-
+```python
+#__SOLUTION__
+ts.index?
+```
 
 We can easily see now see whether offenses happen, for example, during business hours.
 
 
 
 ```python
-fig, ax = plt.subplots()
+
 
 ts['hour'] = ts.index
 ts['hour'] = ts.hour.apply(lambda x: x.hour)
-ts['business_hours'] = ts.hour.apply(lambda x: 9 <= x <= 1700 )
+ts['business_hours'] = ts.hour.apply(lambda x: 9 <= x <= 16 )
 
+ts.business_hours.value_counts()
+```
+
+
+```python
+fig, ax = plt.subplots()
 bh_ratio = ts.business_hours.value_counts()[1]/len(ts)
 
 x = ts.business_hours.value_counts().index
@@ -529,38 +346,97 @@ sns.barplot(x=x, y=y)
 ax.set_title(f'{bh_ratio: .2%} of Offenses\n Happen Btwn 9 and 5')
 ```
 
-
-
-
-    Text(0.5, 1.0, ' 73.17% of Offenses\n Happen Btwn 9 and 5')
-
-
-
-
-![png](index_files/index_41_1.png)
-
-
 ### With a partner, take five minutes ot play around with the datetime object, and make a plot that answers a time based question about our data.
-
-![pair](https://media.giphy.com/media/SvulfW0MQncFYzQEMT/giphy.gif)
-
-We also have new abilities, such as **resampling**
-
-To create our timeseries, we will count the number of gun offenses reported per day.
 
 
 ```python
-ts.resample('D')
+# What is the distribution of gun crime across different days of the week
+
 ```
 
 
+```python
+#__SOLUTION__
+ts['dow'] = ts.index
+
+# 0 aligns with Monday
+ts['dow'] = ts.dow.apply(lambda x: x.dayofweek)
+
+x = ts.dow.value_counts(sort=False).index
+
+height = ts.dow.value_counts(sort=False)
+
+fig, ax = plt.subplots()
+
+sns.barplot(x, height, color='r', ax=ax)
+ax.set_title('Gun Crime Across the Months')
+ax.set_ylabel('Gun Crime Count')
+ax.set_xlabel('Day of Week')
+ax.set_xticklabels(['M', 'T', 'W', 'Th', 'F', 'Sa', 'Su']);
+```
 
 
-    <pandas.core.resample.DatetimeIndexResampler object at 0x120a29630>
+```python
+# What is the distribution of gun crime across different quarters
+
+```
 
 
+```python
+#__SOLUTION__
+ts['quarter'] = ts.index
+ts['quarter'] = ts.quarter.apply(lambda x: x.quarter)
 
-Take a moment to familiarize yourself with the differnece resampling aliases
+x = ts.quarter.value_counts(sort=False).index
+
+height = ts.quarter.value_counts(sort=False)
+
+fig, ax = plt.subplots()
+
+sns.barplot(x, height, color='r', ax=ax)
+ax.set_title('Gun Crime Across Quarters')
+ax.set_ylabel('Gun Crime Count')
+ax.set_xlabel('Quarter')
+
+```
+
+
+```python
+# What is the distribution of gun crime across months
+
+```
+
+
+```python
+#__SOLUTION__
+ts['month'] = ts.index
+ts['month'] = ts.month.apply(lambda x: x.month)
+
+
+x = ts.month.value_counts(sort=False).index
+
+height = ts.month.value_counts(sort=False)
+
+fig, ax = plt.subplots()
+
+sns.barplot(x, height, color='r', ax=ax)
+ax.set_title('Gun Crime Across the Months')
+ax.set_ylabel('Gun Crime Count')
+ax.set_xlabel('Month')
+```
+
+![pair](https://media.giphy.com/media/SvulfW0MQncFYzQEMT/giphy.gif)
+
+<a id='section_3'></a>
+
+# 3: Time Series Preprocessing Techniques
+
+<a id='resampling'></a>
+
+## Resampling
+We have new abilities, such as **resampling**
+
+Take a moment to familiarize yourself with the difference between resampling aliases
 
 <table style="display: inline-block">
     <caption style="text-align: center"><strong>TIME SERIES OFFSET ALIASES</strong></caption>
@@ -598,6 +474,19 @@ Take a moment to familiarize yourself with the differnece resampling aliases
 <tr><td>U, us</td><td>microseconds</td></tr>
 <tr><td>N</td><td>nanoseconds</td></tr></table>
 
+To create our timeseries, we will count the number of gun offenses reported per day.
+
+
+```python
+# Code: Use the resample method with the 'D' parameter
+```
+
+
+```python
+#__SOLUTION__
+ts.resample('D')
+```
+
 When resampling, we have to provide a rule to resample by, and an **aggregate function**.
 
 **To upsample** is to increase the frequency of the data of interest.  
@@ -607,380 +496,32 @@ For our purposes, we will downsample, and  count the number of occurences per da
 
 
 ```python
-ts.resample('D').count()
+# Code: Add the aggregate function count()
 ```
 
 
-
-
-<div>
-<style scoped>
-    .dataframe tbody tr th:only-of-type {
-        vertical-align: middle;
-    }
-
-    .dataframe tbody tr th {
-        vertical-align: top;
-    }
-
-    .dataframe thead th {
-        text-align: right;
-    }
-</style>
-<table border="1" class="dataframe">
-  <thead>
-    <tr style="text-align: right;">
-      <th></th>
-      <th>ID</th>
-      <th>Case Number</th>
-      <th>Block</th>
-      <th>IUCR</th>
-      <th>Primary Type</th>
-      <th>Description</th>
-      <th>Location Description</th>
-      <th>Arrest</th>
-      <th>Domestic</th>
-      <th>Beat</th>
-      <th>...</th>
-      <th>FBI Code</th>
-      <th>X Coordinate</th>
-      <th>Y Coordinate</th>
-      <th>Year</th>
-      <th>Updated On</th>
-      <th>Latitude</th>
-      <th>Longitude</th>
-      <th>Location</th>
-      <th>hour</th>
-      <th>business_hours</th>
-    </tr>
-    <tr>
-      <th>Date</th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <th>2014-01-01</th>
-      <td>50</td>
-      <td>50</td>
-      <td>50</td>
-      <td>50</td>
-      <td>50</td>
-      <td>50</td>
-      <td>50</td>
-      <td>50</td>
-      <td>50</td>
-      <td>50</td>
-      <td>...</td>
-      <td>50</td>
-      <td>50</td>
-      <td>50</td>
-      <td>50</td>
-      <td>50</td>
-      <td>50</td>
-      <td>50</td>
-      <td>50</td>
-      <td>50</td>
-      <td>50</td>
-    </tr>
-    <tr>
-      <th>2014-01-02</th>
-      <td>33</td>
-      <td>33</td>
-      <td>33</td>
-      <td>33</td>
-      <td>33</td>
-      <td>33</td>
-      <td>33</td>
-      <td>33</td>
-      <td>33</td>
-      <td>33</td>
-      <td>...</td>
-      <td>33</td>
-      <td>33</td>
-      <td>33</td>
-      <td>33</td>
-      <td>33</td>
-      <td>33</td>
-      <td>33</td>
-      <td>33</td>
-      <td>33</td>
-      <td>33</td>
-    </tr>
-    <tr>
-      <th>2014-01-03</th>
-      <td>24</td>
-      <td>24</td>
-      <td>24</td>
-      <td>24</td>
-      <td>24</td>
-      <td>24</td>
-      <td>24</td>
-      <td>24</td>
-      <td>24</td>
-      <td>24</td>
-      <td>...</td>
-      <td>24</td>
-      <td>24</td>
-      <td>24</td>
-      <td>24</td>
-      <td>24</td>
-      <td>24</td>
-      <td>24</td>
-      <td>24</td>
-      <td>24</td>
-      <td>24</td>
-    </tr>
-    <tr>
-      <th>2014-01-04</th>
-      <td>32</td>
-      <td>32</td>
-      <td>32</td>
-      <td>32</td>
-      <td>32</td>
-      <td>32</td>
-      <td>32</td>
-      <td>32</td>
-      <td>32</td>
-      <td>32</td>
-      <td>...</td>
-      <td>32</td>
-      <td>32</td>
-      <td>32</td>
-      <td>32</td>
-      <td>32</td>
-      <td>32</td>
-      <td>32</td>
-      <td>32</td>
-      <td>32</td>
-      <td>32</td>
-    </tr>
-    <tr>
-      <th>2014-01-05</th>
-      <td>17</td>
-      <td>17</td>
-      <td>17</td>
-      <td>17</td>
-      <td>17</td>
-      <td>17</td>
-      <td>17</td>
-      <td>17</td>
-      <td>17</td>
-      <td>17</td>
-      <td>...</td>
-      <td>17</td>
-      <td>17</td>
-      <td>17</td>
-      <td>17</td>
-      <td>17</td>
-      <td>17</td>
-      <td>17</td>
-      <td>17</td>
-      <td>17</td>
-      <td>17</td>
-    </tr>
-    <tr>
-      <th>...</th>
-      <td>...</td>
-      <td>...</td>
-      <td>...</td>
-      <td>...</td>
-      <td>...</td>
-      <td>...</td>
-      <td>...</td>
-      <td>...</td>
-      <td>...</td>
-      <td>...</td>
-      <td>...</td>
-      <td>...</td>
-      <td>...</td>
-      <td>...</td>
-      <td>...</td>
-      <td>...</td>
-      <td>...</td>
-      <td>...</td>
-      <td>...</td>
-      <td>...</td>
-      <td>...</td>
-    </tr>
-    <tr>
-      <th>2020-06-21</th>
-      <td>52</td>
-      <td>52</td>
-      <td>52</td>
-      <td>52</td>
-      <td>52</td>
-      <td>52</td>
-      <td>52</td>
-      <td>52</td>
-      <td>52</td>
-      <td>52</td>
-      <td>...</td>
-      <td>52</td>
-      <td>52</td>
-      <td>52</td>
-      <td>52</td>
-      <td>52</td>
-      <td>52</td>
-      <td>52</td>
-      <td>52</td>
-      <td>52</td>
-      <td>52</td>
-    </tr>
-    <tr>
-      <th>2020-06-22</th>
-      <td>66</td>
-      <td>66</td>
-      <td>66</td>
-      <td>66</td>
-      <td>66</td>
-      <td>66</td>
-      <td>66</td>
-      <td>66</td>
-      <td>66</td>
-      <td>66</td>
-      <td>...</td>
-      <td>66</td>
-      <td>66</td>
-      <td>66</td>
-      <td>66</td>
-      <td>66</td>
-      <td>66</td>
-      <td>66</td>
-      <td>66</td>
-      <td>66</td>
-      <td>66</td>
-    </tr>
-    <tr>
-      <th>2020-06-23</th>
-      <td>48</td>
-      <td>48</td>
-      <td>48</td>
-      <td>48</td>
-      <td>48</td>
-      <td>48</td>
-      <td>48</td>
-      <td>48</td>
-      <td>48</td>
-      <td>48</td>
-      <td>...</td>
-      <td>48</td>
-      <td>48</td>
-      <td>48</td>
-      <td>48</td>
-      <td>48</td>
-      <td>48</td>
-      <td>48</td>
-      <td>48</td>
-      <td>48</td>
-      <td>48</td>
-    </tr>
-    <tr>
-      <th>2020-06-24</th>
-      <td>58</td>
-      <td>58</td>
-      <td>58</td>
-      <td>58</td>
-      <td>58</td>
-      <td>58</td>
-      <td>58</td>
-      <td>58</td>
-      <td>58</td>
-      <td>58</td>
-      <td>...</td>
-      <td>58</td>
-      <td>58</td>
-      <td>58</td>
-      <td>58</td>
-      <td>58</td>
-      <td>58</td>
-      <td>58</td>
-      <td>58</td>
-      <td>58</td>
-      <td>58</td>
-    </tr>
-    <tr>
-      <th>2020-06-25</th>
-      <td>46</td>
-      <td>46</td>
-      <td>46</td>
-      <td>46</td>
-      <td>46</td>
-      <td>46</td>
-      <td>46</td>
-      <td>46</td>
-      <td>46</td>
-      <td>46</td>
-      <td>...</td>
-      <td>46</td>
-      <td>46</td>
-      <td>46</td>
-      <td>46</td>
-      <td>46</td>
-      <td>46</td>
-      <td>46</td>
-      <td>46</td>
-      <td>46</td>
-      <td>46</td>
-    </tr>
-  </tbody>
-</table>
-<p>2368 rows × 23 columns</p>
-</div>
-
-
+```python
+ts.resample('D').count()
+```
 
 Our time series will consist of a series of counts of gun reports per day.
 
 
 ```python
 # ID is unimportant. We could have chosen any column, since the counts are the same.
-ts = ts.resample('D').count()['ID']
+ts_day = None
 ```
 
 
 ```python
-ts
+#__SOLUTION__
+ts_day = ts.resample('D').count()['ID']
 ```
 
 
-
-
-    Date
-    2014-01-01    50
-    2014-01-02    33
-    2014-01-03    24
-    2014-01-04    32
-    2014-01-05    17
-                  ..
-    2020-06-21    52
-    2020-06-22    66
-    2020-06-23    48
-    2020-06-24    58
-    2020-06-25    46
-    Freq: D, Name: ID, Length: 2368, dtype: int64
-
-
+```python
+ts_day
+```
 
 Let's visualize our timeseries with a plot.
 
@@ -989,21 +530,10 @@ Let's visualize our timeseries with a plot.
 import matplotlib.pyplot as plt
 
 fig, ax = plt.subplots(figsize=(10,5))
-ax.plot(ts.index, ts.values)
+ax.plot(ts_day.index, ts_day.values)
 ax.set_title('Gun Crimes per day in Chicago')
 ax.set_ylabel('Reported Gun Crimes')
 ```
-
-
-
-
-    Text(0, 0.5, 'Reported Gun Crimes')
-
-
-
-
-![png](index_files/index_56_1.png)
-
 
 There seems to be some abnormal activity happening towards the end of our series.
 
@@ -1011,26 +541,8 @@ There seems to be some abnormal activity happening towards the end of our series
 
 
 ```python
-ts.sort_values(ascending=False)[:10]
+ts_day.sort_values(ascending=False)[:10]
 ```
-
-
-
-
-    Date
-    2020-05-31    130
-    2020-06-02    109
-    2020-06-01     97
-    2020-06-03     95
-    2020-05-25     93
-    2020-06-20     82
-    2020-05-24     77
-    2018-05-28     74
-    2019-05-26     72
-    2019-07-20     72
-    Name: ID, dtype: int64
-
-
 
 Let's treat the span of days from 5-31 to 6-03 as outliers. 
 
@@ -1038,200 +550,165 @@ There are several ways to do this, but let's first remove the outliers, and popu
 
 
 ```python
-daily_count = ts[ts < 90]
-ts_dr = pd.date_range(daily_count.index[0], daily_count.index[-1])
-ts_daily = np.empty(shape=len(ts_dr))
+# Remove outlier counts over 90
+daily_count = ts_day[ts_day < 90]
+
+# Use pd.date_range that makes a full date range from index[0] to index[-1]
+# 2014-01-01 to 2020-06-25
+
+ts_daterange = pd.date_range(daily_count.index[0], daily_count.index[-1])
+
+# Use np.empty to create an empty array that spans the daterange
+ts_daily = np.empty(shape=len(ts_daterange))
+
+# Convert to a series and reindex with the 
 ts_daily = pd.Series(ts_daily)
-ts_daily = ts_daily.reindex(ts_dr)
-ts = ts_daily.fillna(daily_count)
+ts_daily = ts_daily.reindex(ts_daterange)
+
+ts_day = ts_daily.fillna(daily_count)
+
 ```
-
-
-```python
-ts
-```
-
-
-
-
-    2014-01-01    50.0
-    2014-01-02    33.0
-    2014-01-03    24.0
-    2014-01-04    32.0
-    2014-01-05    17.0
-                  ... 
-    2020-06-21    52.0
-    2020-06-22    66.0
-    2020-06-23    48.0
-    2020-06-24    58.0
-    2020-06-25    46.0
-    Freq: D, Length: 2368, dtype: float64
-
-
-
-Now let's sp
 
 
 ```python
 fig, ax = plt.subplots(figsize=(10,5))
-ts.plot(ax=ax)
+ts_day.plot(ax=ax)
 ax.set_title('Gun Crimes in Chicago with Deadliest Days Removed');
 ```
-
-
-![png](index_files/index_63_0.png)
-
 
 Let's zoom in on that week again
 
 
 ```python
 fig, ax = plt.subplots()
-ax.plot(ts[(ts.index > '2020-05-20') 
-                 & (ts.index < '2020-06-07')]
+ax.plot(ts_day[(ts_day.index > '2020-05-20') 
+                 & (ts_day.index < '2020-06-07')]
        )
 ax.tick_params(rotation=45)
 ax.set_title('We have some gaps now')
 ```
 
-
-
-
-    Text(0.5, 1.0, 'We have some gaps now')
-
-
-
-
-![png](index_files/index_65_1.png)
-
-
 The datetime object allows us several options of how to fill those gaps:
 
 
 ```python
+ts_day[(ts_day.index > '2020-05-20') 
+                 & (ts_day.index < '2020-06-07')]
+```
+
+## Forward Fill
+
+
+```python
+# Take the date range above and call the ffill() method
+ts_day[(ts_day.index > '2020-05-20') 
+                 & (ts_day.index < '2020-06-07')]
+```
+
+
+```python
+#__SOLUTION__
+# Forward Fill
+# Take the date range above and call the ffill() method
+ts_day[(ts_day.index > '2020-05-20') 
+                 & (ts_day.index < '2020-06-07')].ffill()
+```
+
+
+```python
+# Below you will find forward fill visualized
 fig, (ax1,ax2) = plt.subplots(1,2, figsize = (10,5))
-ax1.plot(ts.ffill()[(ts.index > '2020-05-20') 
-                 & (ts.index < '2020-06-07')]
+ax1.plot(ts_day[(ts_day.index > '2020-05-20') 
+                 & (ts_day.index < '2020-06-07')].ffill()
        )
 ax1.tick_params(rotation=45)
 ax1.set_title('Forward Fill')
 
-ax2.plot(ts[(ts.index > '2020-05-20') 
-                 & (ts.index < '2020-06-07')]
+ax2.plot(ts_day[(ts_day.index > '2020-05-20') 
+                 & (ts_day.index < '2020-06-07')]
        )
 ax2.tick_params(rotation=45)
 ax2.set_title('Original')
 
 ```
 
+## Backward Fill
 
 
+```python
+# Take the date range above and call the bfill() method
 
-    Text(0.5, 1.0, 'Original')
+ts_day[(ts_day.index > '2020-05-20') 
+                 & (ts_day.index < '2020-06-07')]
+```
 
 
-
-
-![png](index_files/index_67_1.png)
-
+```python
+#__SOLUTION__ 
+ts_day[(ts_day.index > '2020-05-20') 
+                 & (ts_day.index < '2020-06-07')].bfill()
+```
 
 
 ```python
 fig, (ax1,ax2) = plt.subplots(1,2, figsize = (10,5))
-ax1.plot(ts.bfill()[(ts.index > '2020-05-20') 
-                 & (ts.index < '2020-06-07')]
+ax1.plot(ts_day.bfill()[(ts_day.index > '2020-05-20') 
+                 & (ts_day.index < '2020-06-07')]
        )
 ax1.tick_params(rotation=45)
 ax1.set_title('Back Fill')
 
-ax2.plot(ts[(ts.index > '2020-05-20') 
-                 & (ts.index < '2020-06-07')]
+ax2.plot(ts_day[(ts_day.index > '2020-05-20') 
+                 & (ts_day.index < '2020-06-07')]
        )
 ax2.tick_params(rotation=45)
 ax2.set_title('Original')
 ```
 
+# Interpolate 
+Fills the values according to a specified method. The default linear, assumes the data area evenly spaced along the line connecting the real values surrounding the NaN values.
 
 
+```python
+# Call interpolate on the date range from above
+ts_day[(ts_day.index > '2020-05-20') 
+                 & (ts_day.index < '2020-06-07')]
+```
 
-    Text(0.5, 1.0, 'Original')
 
-
-
-
-![png](index_files/index_68_1.png)
-
+```python
+#__SOLUTION__
+ts_day[(ts_day.index > '2020-05-20') 
+                 & (ts_day.index < '2020-06-07')].interpolate()
+```
 
 
 ```python
 fig, (ax1,ax2) = plt.subplots(1,2, figsize = (10,5))
-ax1.plot(ts.interpolate()[(ts.index > '2020-05-20') 
-                 & (ts.index < '2020-06-07')]
+ax1.plot(ts_day.interpolate()[(ts_day.index > '2020-05-20') 
+                 & (ts_day.index < '2020-06-07')]
        )
 ax1.tick_params(rotation=45)
 ax1.set_title('Interpolation')
 
-ax2.plot(ts[(ts.index > '2020-05-20') 
-                 & (ts.index < '2020-06-07')]
+ax2.plot(ts_day[(ts_day.index > '2020-05-20') 
+                 & (ts_day.index < '2020-06-07')]
        )
 ax2.tick_params(rotation=45)
 ax2.set_title('Original')
 ```
 
+<a id='moving_avg'></a>
+
+# SMA and EWMA
+
+We could also proceed by smoothing our data.
+
+- Smoothing is replacing the measured value on each day with an average of a moving window across near values.  Applying smoothing, with for example a simple moving average an exponentially weighted average, can be used to minimize the effect of outliers. It can then serve as an alternative to dropping outliers to reduce measurement spikes and errors of measurement (Practical Time Series Analysis, Nielson, p. 55)
+
+- Moving averages can also provide a clearer picture of trends in noisy data. 
 
 
-
-    Text(0.5, 1.0, 'Original')
-
-
-
-
-![png](index_files/index_69_1.png)
-
-
-Let's proceed with the interpolated data
-
-
-```python
-ts = ts.interpolate()
-ts.isna().sum()
-```
-
-
-
-
-    0
-
-
-
-Let's begin considering some models for our data.
-
-These are not useful for prediction just yet, but they will lead us towards our prediction models.
-
-Now that we've cleaned up a few data points, let's downsample to the week level.  
-
-
-```python
-ts_weekly = ts.resample('W').mean()
-```
-
-
-```python
-ts_weekly.plot()
-```
-
-
-
-
-    <matplotlib.axes._subplots.AxesSubplot at 0x1a303cbd30>
-
-
-
-
-![png](index_files/index_75_1.png)
-
-
-# Visual Diagnostics with SMA and EWMA
 
 # Simple Moving Average
 
@@ -1243,153 +720,87 @@ The rolling function calculates a statistic across a moving **window**, which we
 
 
 ```python
-ts_weekly.rolling(window=4)
+ts_to_smooth = ts.resample('D').count()['ID']
 ```
 
 
-
-
-    Rolling [window=4,center=False,axis=0]
-
-
-
-Let's calculate a month long moving average
-
-
 ```python
-ts_weekly.rolling(4).mean()[:10]
+# call the rolling method with window=4 as the argument
+
 ```
 
 
+```python
+#__SOLUTION__
+ts_to_smooth.rolling(window=7)
+```
 
-
-    2014-01-05          NaN
-    2014-01-12          NaN
-    2014-01-19          NaN
-    2014-01-26    24.835714
-    2014-02-02    22.607143
-    2014-02-09    22.142857
-    2014-02-16    20.035714
-    2014-02-23    17.607143
-    2014-03-02    16.214286
-    2014-03-09    16.607143
-    Freq: W-SUN, dtype: float64
-
-
-
-This is simply the avarage of a datapoint and the previous three data points:
+The rolling method requires we specify an aggregate function. For moving average, we call mean.
 
 
 ```python
-ts_weekly[:4]
+# call mean without arguments on the rolling object from above
+
 ```
 
 
+```python
+ts_to_smooth.rolling(7).mean()[:10]
+```
 
-
-    2014-01-05    31.200000
-    2014-01-12    19.000000
-    2014-01-19    24.571429
-    2014-01-26    24.571429
-    Freq: W-SUN, dtype: float64
-
-
+This is simply the avarage of a datapoint and the previous seven data points:
 
 
 ```python
-ts_weekly[:4].mean() 
+# Take the first 7 day counts
+ts_to_smooth[:7]
 ```
 
 
-
-
-    24.835714285714285
-
-
-
-
 ```python
-ts_weekly[:4].mean() == ts_weekly.rolling(4).mean()[3]
+# Take their mean
+ts_to_smooth[:7].mean() 
 ```
 
 
-
-
-    True
-
-
+```python
+# And confirm this equals the 7 day rolling window
+ts_to_smooth[:7].mean() == ts_to_smooth.rolling(7).mean()[6]
+```
 
 
 ```python
-# Drop the NaN's that occur because their aren't enough values for the window
-sma_week = ts_weekly.rolling(4).mean()
-
 fig, ax = plt.subplots(figsize=(10,5))
 
-ts_weekly.plot(ax=ax)
-sma_week.plot(ax=ax)
-
+ts_to_smooth.rolling(7).mean().plot(ax=ax, label='7 Day SMA')
+ts_to_smooth.plot(ax=ax, alpha=.5, label='Original Data')
+ax.set_title("Smoothing Dampens the Signal of Summer 2020 Outliers")
+ax.legend();
 ```
 
-
-
-
-    <matplotlib.axes._subplots.AxesSubplot at 0x1a307795f8>
-
-
-
-
-![png](index_files/index_86_1.png)
-
-
-As we can see from the plot below, simple moving average **smooths** out the series. Smoothing can help visualize the underlying pattern.  It can also be a very simple predictive model, where we just project the mean out into the future.
+If we increase the window even more, the data **smooths** out in a way to help visualize the underlying seasonal pattern. 
 
 
 ```python
-# Let's zoom in
-
 fig, ax = plt.subplots(figsize=(10,5))
 
-ts_weekly[-100:].plot(ax=ax, c='r')
-sma_week[-100:].plot(ax=ax, c='b')
-
+ts_to_smooth.rolling(30).mean().plot(ax=ax, label='7 Day SMA')
+ts_to_smooth.plot(ax=ax, alpha=.5, label='Original Data')
+ax.set_title("30 Day SMA Shows Seasonality")
+ax.legend();
 ```
 
-
-
-
-    <matplotlib.axes._subplots.AxesSubplot at 0x1a30854c50>
-
-
-
-
-![png](index_files/index_88_1.png)
-
-
-The simple moving avereage tracks fairly well, but does not reach to the peaks and valleys of the original distribution.
-
-If we plot the moving average across 52 weeeks, we can see a smooth trend across a year.  The SMA reaches back 52 weeks, shwing that the steepest growth of gun crime started around the beginning of 2016 and leveled out at the beginning of 2017.
+If we plot the moving average across 365 days, we can see a smooth trend across a year.  The SMA reaches back 365 weeks, showing that the steepest growth of gun crime started around the beginning of 2016 and leveled out at the beginning of 2017.
 
 
 ```python
-sma_week = ts_weekly.rolling(52).mean()
-
 fig, ax = plt.subplots(figsize=(10,5))
 
-ts_weekly.plot(ax=ax)
-sma_week.plot(ax=ax)
+ts_to_smooth.rolling(365).mean().plot(ax=ax, label='7 Day SMA')
+ts_to_smooth.plot(ax=ax, alpha=.5, label='Original Data')
+ax.set_title("30 Day SMA Shows Seasonality")
+ax.legend();
 ```
-
-
-
-
-    <matplotlib.axes._subplots.AxesSubplot at 0x1a31667748>
-
-
-
-
-![png](index_files/index_91_1.png)
-
 
 # EWMA
 ## Exponentially Weighted Moving Average 
@@ -1397,77 +808,29 @@ sma_week.plot(ax=ax)
 An alternative to SMA is the EWMA. The exponentially weighted average gives more weight to the points closer to the date in question.  With EWMA, the average will track more closely to the peaks and valleys. If there are extreme historical values in the dataset, the EWMA will be less skewed than the SMA.
 
 
-$\large d^3 * X_{t-3} + d^2 * X_{t-2} + d^1 * X_{t-1}+ (1-d)*X_t$
+$\large X_{t} = \beta * X_{t-1} * (1-\beta)*X_t$
+
+Which after recursion, breaks resolves into:
+
+$\large \beta^3 * X_{t-3} + \beta^2 * X_{t-2} + \beta * X_{t-1}+ (1-\beta)*X_t$
+
+For this equation, X_t gives us an approximation of the last $1/(1-\beta)$ days.
+
+>Andrew Ng, [EWMA](https://www.coursera.org/learn/deep-neural-network/lecture/duStO/exponentially-weighted-averages)
 
 
 ```python
-ts_ex_ewm = ts_weekly.ewm(alpha=.5).mean()[:10]
+ts_ex_ewm = ts_to_smooth.ewm(alpha=.1, adjust=False).mean()[:10]
 ts_ex_ewm
 ```
-
-
-
-
-    2014-01-05    31.200000
-    2014-01-12    23.066667
-    2014-01-19    23.926531
-    2014-01-26    24.270476
-    2014-02-02    23.246083
-    2014-02-09    20.146032
-    2014-02-16    18.128684
-    2014-02-23    16.486499
-    2014-03-02    16.600615
-    2014-03-09    17.658483
-    Freq: W-SUN, dtype: float64
-
-
 
 The higher the $\alpha$ parameter, the closer the EWMA will be to the actual value of the point.
 
 
 ```python
-ts_ex_ewm = ts_weekly.ewm(alpha=.99).mean()[:10]
+ts_ex_ewm = ts_to_smooth.ewm(alpha=.99).mean()[:10]
 ts_ex_ewm
 ```
-
-
-
-
-    2014-01-05    31.200000
-    2014-01-12    19.120792
-    2014-01-19    24.516928
-    2014-01-26    24.570884
-    2014-02-02    22.308566
-    2014-02-09    17.194514
-    2014-02-16    16.153374
-    2014-02-23    14.870105
-    2014-03-02    16.695844
-    2014-03-09    18.694101
-    Freq: W-SUN, dtype: float64
-
-
-
-
-```python
-ts_weekly[:10]
-```
-
-
-
-
-    2014-01-05    31.200000
-    2014-01-12    19.000000
-    2014-01-19    24.571429
-    2014-01-26    24.571429
-    2014-02-02    22.285714
-    2014-02-09    17.142857
-    2014-02-16    16.142857
-    2014-02-23    14.857143
-    2014-03-02    16.714286
-    2014-03-09    18.714286
-    Freq: W-SUN, dtype: float64
-
-
 
 Let's plot our rolling statistics with some different windows
 
@@ -1475,21 +838,10 @@ Let's plot our rolling statistics with some different windows
 ```python
 fig, ax = plt.subplots(figsize=(10,5))
 
-ts_weekly[-100:].plot(ax=ax, c='r', label='Original')
-ts_weekly.rolling(4).mean().dropna()[-100:].plot(ax=ax, c='g', label='SMA')
-ts_weekly.ewm(span=4).mean().dropna()[-100:].plot(ax=ax, c='b', label='EWMA')
+ts_to_smooth[-100:].plot(ax=ax, c='r', label='Original')
+ts_to_smooth.rolling(7).mean().dropna()[-100:].plot(ax=ax, c='g', label='SMA')
+ts_to_smooth.ewm(span=7).mean().dropna()[-100:].plot(ax=ax, c='b', label='EWMA')
 ```
-
-
-
-
-    <matplotlib.axes._subplots.AxesSubplot at 0x1a3cdd0710>
-
-
-
-
-![png](index_files/index_99_1.png)
-
 
 Again, if we zoom in to the year level, we can see peaks and valleys according to the seasons.  
 
@@ -1497,21 +849,10 @@ Again, if we zoom in to the year level, we can see peaks and valleys according t
 ```python
 fig, ax = plt.subplots(figsize=(10,5))
 
-ts_weekly.plot(ax=ax, c='r', label='Original')
-ts_weekly.rolling(52).mean().dropna().plot(ax=ax, c='g', label='SMA')
-ts_weekly.ewm(span=52).mean().dropna().plot(ax=ax, c='b', label='EWMA')
+ts_to_smooth.plot(ax=ax, c='r', label='Original')
+ts_to_smooth.rolling(365).mean().dropna().plot(ax=ax, c='g', label='SMA')
+ts_to_smooth.ewm(span=365).mean().dropna().plot(ax=ax, c='b', label='EWMA')
 ```
-
-
-
-
-    <matplotlib.axes._subplots.AxesSubplot at 0x1a3f939240>
-
-
-
-
-![png](index_files/index_101_1.png)
-
 
 We can also plot rolling averages for the variance and standard deviation.
 
@@ -1525,17 +866,6 @@ ts_weekly.ewm(span=4).var().dropna().plot(ax=ax, c='b', label='EWMA')
 ```
 
 
-
-
-    <matplotlib.axes._subplots.AxesSubplot at 0x1a32c59048>
-
-
-
-
-![png](index_files/index_103_1.png)
-
-
-
 ```python
 
 fig, ax = plt.subplots(figsize=(10,5))
@@ -1544,19 +874,10 @@ ts_weekly.rolling(52).var().dropna().plot(ax=ax, c='g', label='SMA')
 ts_weekly.ewm(span=52).var().dropna().plot(ax=ax, c='b', label='EWMA')
 ```
 
-
-
-
-    <matplotlib.axes._subplots.AxesSubplot at 0x1a32e2f390>
-
-
-
-
-![png](index_files/index_104_1.png)
-
-
 If we zoom in on our standard deviation, we can the variance of our data has quite a fluctuation at different moments in time.  When we are building our models, we will want to remove this variability, or our models will have different performance at different times.  We will be unable, then to be confident our model will perform well at an arbitrary point in the future.
 
+
+<a id='stationarity'></a>
 
 ### Components of Time Series Data
 A time series in general is supposed to be affected by four main components, which can be separated from the observed data. These components are: *Trend, Cyclical, Seasonal and Irregular* components.
@@ -1571,6 +892,28 @@ A time series in general is supposed to be affected by four main components, whi
 
 The statsmodels seasonal decompose can also help show us the trends in our data.
 
+Our modeling will aim to predict the weekly gun crime counts.
+We will treat the outliers with interpolated interpolation.
+
+
+```python
+ts_int = ts_day.interpolate()
+```
+
+
+```python
+# Downsample to a weekly count using resample with the 'W' argument and a mean aggregate
+ts_weekly = None
+```
+
+
+```python
+#__SOLUTION__
+ts_weekly = ts_int.resample('W').mean()
+```
+
+We can now use the seasonal_decompose function to show trends the components of our time series.
+
 
 ```python
 from statsmodels.tsa.seasonal import seasonal_decompose
@@ -1579,14 +922,6 @@ fig = plt.figure()
 fig = decomposition.plot()
 fig.set_size_inches(15, 8)
 ```
-
-
-    <Figure size 432x288 with 0 Axes>
-
-
-
-![png](index_files/index_109_1.png)
-
 
 ### Statistical stationarity: 
 
@@ -1651,21 +986,6 @@ def test_stationarity(timeseries, window):
 test_stationarity(ts_weekly, 52)
 ```
 
-
-![png](index_files/index_119_0.png)
-
-
-    Results of Dickey-Fuller Test:
-    Test Statistic                  -2.562238
-    p-value                          0.101056
-    #Lags Used                       4.000000
-    Number of Observations Used    334.000000
-    Critical Value (1%)             -3.450081
-    Critical Value (5%)             -2.870233
-    Critical Value (10%)            -2.571401
-    dtype: float64
-
-
 As we concluded visually, our original timeseries does not pass the test of stationarity.
 
 ### How to stationarize time series data
@@ -1678,70 +998,32 @@ Differencing is performed by subtracting the previous observation (lag=1) from t
 
 
 ```python
+# Call .diff() on our ts_weekly time series
+
+```
+
+
+```python
+#__SOLUTION__
 ts_weekly.diff().dropna()[:5]
 ```
 
 
+```python
+# drop na's and plot
 
-
-    2014-01-12   -12.200000
-    2014-01-19     5.571429
-    2014-01-26     0.000000
-    2014-02-02    -2.285714
-    2014-02-09    -5.142857
-    Freq: W-SUN, dtype: float64
-
-
+```
 
 
 ```python
+#__SOLUTION__
 ts_weekly.diff().dropna().plot()
 ```
-
-
-
-
-    <matplotlib.axes._subplots.AxesSubplot at 0x1a30a6cfd0>
-
-
-
-
-![png](index_files/index_125_1.png)
-
-
-
-```python
-ts_weekly[:5]
-```
-
-
-
-
-    2014-01-05    31.200000
-    2014-01-12    19.000000
-    2014-01-19    24.571429
-    2014-01-26    24.571429
-    2014-02-02    22.285714
-    Freq: W-SUN, dtype: float64
-
-
 
 
 ```python
 ts_weekly.diff(2).dropna()[:5]
 ```
-
-
-
-
-    2014-01-19   -6.628571
-    2014-01-26    5.571429
-    2014-02-02   -2.285714
-    2014-02-09   -7.428571
-    2014-02-16   -6.142857
-    Freq: W-SUN, dtype: float64
-
-
 
 Sometimes, we have to difference the differenced data (known as a second difference) to achieve stationary data. <b>The number of times we have to difference our data is the order of differencing</b> - we will use this information when building our model.
 
@@ -1753,392 +1035,13 @@ ts_weekly.diff().diff().dropna()[:5]
 ```
 
 
-
-
-    2014-01-19    17.771429
-    2014-01-26    -5.571429
-    2014-02-02    -2.285714
-    2014-02-09    -2.857143
-    2014-02-16     4.142857
-    Freq: W-SUN, dtype: float64
-
-
-
-
 ```python
-# We can also apply seasonal differences:
+# We can also apply seasonal differences by passing 52, i.e. the number of weeks in a year. 
     
 ts_weekly.diff(52).dropna()[:10]
 ```
 
-
-
-
-    2015-01-04   -3.771429
-    2015-01-11    1.571429
-    2015-01-18    0.428571
-    2015-01-25    6.428571
-    2015-02-01   -0.285714
-    2015-02-08    1.142857
-    2015-02-15    0.714286
-    2015-02-22    2.714286
-    2015-03-01    3.714286
-    2015-03-08    5.857143
-    Freq: W-SUN, dtype: float64
-
-
-
 Let's difference our data and see if it improves Dickey-Fuller Test
-
-
-```python
-ts_weekly.diff().dropna()
-```
-
-
-
-
-    2014-01-12   -12.200000
-    2014-01-19     5.571429
-    2014-01-26     0.000000
-    2014-02-02    -2.285714
-    2014-02-09    -5.142857
-    2014-02-16    -1.000000
-    2014-02-23    -1.285714
-    2014-03-02     1.857143
-    2014-03-09     2.000000
-    2014-03-16     2.142857
-    2014-03-23     2.857143
-    2014-03-30    -4.857143
-    2014-04-06     5.571429
-    2014-04-13     7.142857
-    2014-04-20    -0.857143
-    2014-04-27     0.000000
-    2014-05-04    -1.000000
-    2014-05-11     1.428571
-    2014-05-18     0.571429
-    2014-05-25    -0.571429
-    2014-06-01     0.000000
-    2014-06-08    -1.714286
-    2014-06-15     3.571429
-    2014-06-22     0.428571
-    2014-06-29     0.142857
-    2014-07-06     2.000000
-    2014-07-13    -2.285714
-    2014-07-20    -1.857143
-    2014-07-27     0.571429
-    2014-08-03     0.428571
-    2014-08-10    -3.714286
-    2014-08-17     2.857143
-    2014-08-24    -2.142857
-    2014-08-31    -0.142857
-    2014-09-07    -4.142857
-    2014-09-14    -0.857143
-    2014-09-21     4.714286
-    2014-09-28     7.571429
-    2014-10-05    -6.285714
-    2014-10-12    -6.857143
-    2014-10-19     4.571429
-    2014-10-26     4.857143
-    2014-11-02    -0.857143
-    2014-11-09    -7.142857
-    2014-11-16     2.285714
-    2014-11-23    -1.571429
-    2014-11-30    -0.285714
-    2014-12-07     3.428571
-    2014-12-14     3.857143
-    2014-12-21     1.428571
-    2014-12-28    -3.000000
-    2015-01-04    -3.571429
-    2015-01-11    -6.857143
-    2015-01-18     4.428571
-    2015-01-25     6.000000
-    2015-02-01    -9.000000
-    2015-02-08    -3.714286
-    2015-02-15    -1.428571
-    2015-02-22     0.714286
-    2015-03-01     2.857143
-    2015-03-08     4.142857
-    2015-03-15     4.857143
-    2015-03-22    -1.000000
-    2015-03-29    -2.571429
-    2015-04-05     5.285714
-    2015-04-12    -1.285714
-    2015-04-19    -0.285714
-    2015-04-26    -0.714286
-    2015-05-03    -1.285714
-    2015-05-10    -2.000000
-    2015-05-17    11.000000
-    2015-05-24    -2.000000
-    2015-05-31    -1.428571
-    2015-06-07    -4.285714
-    2015-06-14     4.000000
-    2015-06-21     1.142857
-    2015-06-28    -0.142857
-    2015-07-05     2.285714
-    2015-07-12    -3.714286
-    2015-07-19     1.571429
-    2015-07-26     4.285714
-    2015-08-02     2.285714
-    2015-08-09    -5.285714
-    2015-08-16    -1.285714
-    2015-08-23     3.285714
-    2015-08-30    -1.571429
-    2015-09-06     1.428571
-    2015-09-13    -4.857143
-    2015-09-20     3.000000
-    2015-09-27     4.142857
-    2015-10-04    -5.714286
-    2015-10-11    -2.571429
-    2015-10-18    -2.142857
-    2015-10-25     9.000000
-    2015-11-01    -4.857143
-    2015-11-08    -5.285714
-    2015-11-15     2.428571
-    2015-11-22    -3.857143
-    2015-11-29     2.285714
-    2015-12-06     0.857143
-    2015-12-13    -1.142857
-    2015-12-20     2.428571
-    2015-12-27     2.857143
-    2016-01-03    -1.714286
-    2016-01-10     4.142857
-    2016-01-17    -5.428571
-    2016-01-24     1.571429
-    2016-01-31     3.428571
-    2016-02-07    -6.000000
-    2016-02-14    -6.571429
-    2016-02-21     4.000000
-    2016-02-28     0.571429
-    2016-03-06    -1.714286
-    2016-03-13    10.428571
-    2016-03-20    -2.714286
-    2016-03-27     0.428571
-    2016-04-03     2.571429
-    2016-04-10    -6.428571
-    2016-04-17    11.428571
-    2016-04-24    -2.714286
-    2016-05-01    -6.142857
-    2016-05-08     9.000000
-    2016-05-15    -6.571429
-    2016-05-22     9.857143
-    2016-05-29    -0.428571
-    2016-06-05    -0.714286
-    2016-06-12    -3.714286
-    2016-06-19     3.142857
-    2016-06-26    -0.857143
-    2016-07-03    -0.142857
-    2016-07-10     7.428571
-    2016-07-17    -8.428571
-    2016-07-24    -0.571429
-    2016-07-31     4.285714
-    2016-08-07     1.000000
-    2016-08-14     0.428571
-    2016-08-21     0.142857
-    2016-08-28     3.571429
-    2016-09-04    -2.285714
-    2016-09-11    -6.000000
-    2016-09-18    -1.285714
-    2016-09-25     2.000000
-    2016-10-02    -6.571429
-    2016-10-09     3.714286
-    2016-10-16     6.714286
-    2016-10-23    -2.142857
-    2016-10-30    -2.714286
-    2016-11-06    10.142857
-    2016-11-13    -7.714286
-    2016-11-20    -4.428571
-    2016-11-27     2.857143
-    2016-12-04    -2.428571
-    2016-12-11    -8.000000
-    2016-12-18    -1.000000
-    2016-12-25     6.571429
-    2017-01-01    12.142857
-    2017-01-08   -13.571429
-    2017-01-15     3.285714
-    2017-01-22     3.857143
-    2017-01-29    -5.714286
-    2017-02-05     2.714286
-    2017-02-12    -3.571429
-    2017-02-19     3.000000
-    2017-02-26    -9.714286
-    2017-03-05     0.000000
-    2017-03-12    -0.285714
-    2017-03-19    -1.000000
-    2017-03-26     8.000000
-    2017-04-02    -4.142857
-    2017-04-09     0.000000
-    2017-04-16    15.142857
-    2017-04-23    -4.285714
-    2017-04-30    -4.428571
-    2017-05-07    -4.000000
-    2017-05-14     1.428571
-    2017-05-21     5.714286
-    2017-05-28     1.000000
-    2017-06-04     2.000000
-    2017-06-11     0.142857
-    2017-06-18    -7.571429
-    2017-06-25     4.714286
-    2017-07-02     3.428571
-    2017-07-09     8.000000
-    2017-07-16   -10.857143
-    2017-07-23     1.000000
-    2017-07-30    -1.142857
-    2017-08-06    -2.285714
-    2017-08-13     0.571429
-    2017-08-20     4.571429
-    2017-08-27    -0.714286
-    2017-09-03     5.285714
-    2017-09-10    -8.142857
-    2017-09-17    -4.142857
-    2017-09-24     5.571429
-    2017-10-01    -2.714286
-    2017-10-08    -0.714286
-    2017-10-15    -1.285714
-    2017-10-22     3.285714
-    2017-10-29     1.857143
-    2017-11-05    -1.428571
-    2017-11-12    -1.428571
-    2017-11-19    -3.714286
-    2017-11-26     1.428571
-    2017-12-03     2.571429
-    2017-12-10    -2.285714
-    2017-12-17    -1.285714
-    2017-12-24     0.142857
-    2017-12-31    -6.428571
-    2018-01-07     8.714286
-    2018-01-14    -2.428571
-    2018-01-21    -2.714286
-    2018-01-28     4.142857
-    2018-02-04    -9.000000
-    2018-02-11    -6.714286
-    2018-02-18     7.285714
-    2018-02-25     3.571429
-    2018-03-04    -2.571429
-    2018-03-11     2.000000
-    2018-03-18    -1.571429
-    2018-03-25     1.142857
-    2018-04-01     0.428571
-    2018-04-08    -6.428571
-    2018-04-15    11.857143
-    2018-04-22    -4.428571
-    2018-04-29     2.142857
-    2018-05-06     6.714286
-    2018-05-13    -4.428571
-    2018-05-20     2.571429
-    2018-05-27     7.142857
-    2018-06-03    -4.571429
-    2018-06-10     0.142857
-    2018-06-17    -1.142857
-    2018-06-24    -5.285714
-    2018-07-01    12.285714
-    2018-07-08    -3.000000
-    2018-07-15    -4.428571
-    2018-07-22    -1.142857
-    2018-07-29     4.142857
-    2018-08-05     0.714286
-    2018-08-12    -0.428571
-    2018-08-19    -0.571429
-    2018-08-26    -7.571429
-    2018-09-02     7.714286
-    2018-09-09    -7.714286
-    2018-09-16     0.000000
-    2018-09-23     2.714286
-    2018-09-30    -5.142857
-    2018-10-07     0.285714
-    2018-10-14     1.571429
-    2018-10-21    -4.142857
-    2018-10-28     7.571429
-    2018-11-04    -1.857143
-    2018-11-11    -2.428571
-    2018-11-18    -3.714286
-    2018-11-25    -0.571429
-    2018-12-02     1.857143
-    2018-12-09     2.142857
-    2018-12-16    -0.857143
-    2018-12-23     0.857143
-    2018-12-30     4.714286
-    2019-01-06     5.571429
-    2019-01-13   -15.142857
-    2019-01-20     2.571429
-    2019-01-27    -4.714286
-    2019-02-03    -5.000000
-    2019-02-10     3.285714
-    2019-02-17     2.857143
-    2019-02-24     0.142857
-    2019-03-03    -2.142857
-    2019-03-10    -0.857143
-    2019-03-17     3.428571
-    2019-03-24     2.285714
-    2019-03-31     3.000000
-    2019-04-07    -1.000000
-    2019-04-14    -0.714286
-    2019-04-21     4.428571
-    2019-04-28     1.857143
-    2019-05-05    -4.857143
-    2019-05-12    -2.285714
-    2019-05-19     3.428571
-    2019-05-26    12.000000
-    2019-06-02    -8.285714
-    2019-06-09     4.428571
-    2019-06-16    -7.000000
-    2019-06-23    -1.571429
-    2019-06-30    12.571429
-    2019-07-07     0.428571
-    2019-07-14   -10.000000
-    2019-07-21     5.142857
-    2019-07-28    -0.571429
-    2019-08-04     3.000000
-    2019-08-11     3.000000
-    2019-08-18    -7.857143
-    2019-08-25    -2.714286
-    2019-09-01     0.000000
-    2019-09-08    -4.142857
-    2019-09-15     6.571429
-    2019-09-22    -1.571429
-    2019-09-29    -5.714286
-    2019-10-06    -3.714286
-    2019-10-13     3.714286
-    2019-10-20     2.571429
-    2019-10-27    -0.428571
-    2019-11-03    -3.857143
-    2019-11-10     1.428571
-    2019-11-17    -6.714286
-    2019-11-24    10.857143
-    2019-12-01    -4.000000
-    2019-12-08     5.000000
-    2019-12-15   -10.428571
-    2019-12-22     8.000000
-    2019-12-29     1.857143
-    2020-01-05     6.142857
-    2020-01-12   -14.428571
-    2020-01-19     1.285714
-    2020-01-26     2.000000
-    2020-02-02     3.142857
-    2020-02-09    -4.000000
-    2020-02-16    -3.000000
-    2020-02-23     8.428571
-    2020-03-01    -9.428571
-    2020-03-08     3.571429
-    2020-03-15    -0.428571
-    2020-03-22    -2.142857
-    2020-03-29     1.428571
-    2020-04-05     1.571429
-    2020-04-12     5.285714
-    2020-04-19    -6.000000
-    2020-04-26     0.571429
-    2020-05-03     5.285714
-    2020-05-10    -2.428571
-    2020-05-17    11.428571
-    2020-05-24     4.142857
-    2020-05-31     3.300000
-    2020-06-07     4.614286
-    2020-06-14    -9.628571
-    2020-06-21     3.714286
-    2020-06-28     0.642857
-    Freq: W-SUN, dtype: float64
-
-
 
 
 ```python
@@ -2174,21 +1077,6 @@ def test_stationarity(timeseries, window):
 ```python
 test_stationarity(ts_weekly.diff().dropna(), 52)
 ```
-
-
-![png](index_files/index_134_0.png)
-
-
-    Results of Dickey-Fuller Test:
-    Test Statistic                -1.322052e+01
-    p-value                        1.003933e-24
-    #Lags Used                     3.000000e+00
-    Number of Observations Used    3.340000e+02
-    Critical Value (1%)           -3.450081e+00
-    Critical Value (5%)           -2.870233e+00
-    Critical Value (10%)          -2.571401e+00
-    dtype: float64
-
 
 One we have achieved stationarity the next step in fitting a model to address any autocorrelation that remains in the differenced series. 
 
