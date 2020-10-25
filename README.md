@@ -1,11 +1,26 @@
 
+# Time Series
+
+![Clocks](https://media.giphy.com/media/xTiTnEeKtzw4zJyFsQ/giphy.gif)
+
+
+```python
+
+# 1. Linear relationship between target and predictors
+# 2. No multicollinearity
+# 3. Errors are normally distributed
+# 4. Homoscedasticity of target w.r.t. the range of predictors (residuals show no patterns)
+# 5. No autocorrelation between records
+```
+
 <a id='section_1'></a>
 
 # Time Series vs. Linear
 
-For linear regression, we attempted to explain the variance of a continuous target variable via a set of **independent predictor features**. We assumed that there was no **autocorrelation** amongst our records.  In other words, we did not use the target variable of one row to predict that of another.
+For linear regression, we attempted to explain the variance of a continuous target variable via a set of **independent predictor features**. We assumed that there was no **autocorrelation** amongst our records.  Whereas multicolinearity describes two features whose linear increase or decrease is correlated,  autocorrelation describes whether there is a relationship between values of the same variable at different times.   
 
-In time series models, we make the opposite assumption.  We assume that a given value can best be predicted by its **past values**.
+
+In linear regression, we make the assumption that each record is independent of the others.  In time series models, we make the opposite assumption.  We assume that a given value can best be predicted by its **past values**.
 
 The main idea with time series is to replace our independent features with past values of our target. 
 
@@ -16,39 +31,48 @@ The models we will cover in lecture include endogenous variables.
 
 Many statsmodels tools use <tt>endog</tt> to represent the incoming time series data in place of the constant <tt>y</tt>.<br>
 
-For more information and a nice **mneumonic**, visit http://www.statsmodels.org/stable/endog_exog.html
+For more information visit http://www.statsmodels.org/stable/endog_exog.html
 
-Time series analysis has many applications.  With new methods of personalized data collection, the opportunity for time series analysis is growing.  Take health care,  where new wearable technology is producing individualized records of medical data. With a smartwatch or phone, heartrate, bloodpressure, sleep and activity records, can all be recorded easily. All of these datapoints can be timestamped precisely, and easily exported for analysis.
+# Applications
+> informed by [Practical Time Series Analysis](https://www.oreilly.com/library/view/practical-time-series/9781492041641/), Nielson)
 
-There is also plenty of opportunities to apply time series models in other fields.  In finance, time series data is plentiful, collected by both the government and private industry.  Data scientest can use financial data to build models not only for personal financial betterment, but for forecasting economic cycles and unemployment rate.
 
-# Time Series
+## Healthcare
+> With new methods of personalized data collection, the opportunity for time series analysis is growing.  Take health care,  where new wearable technology is producing individualized records of medical data. With a smartwatch or phone, heartrate, bloodpressure, sleep and activity records, can all be recorded easily. All of these datapoints can be timestamped precisely, and easily exported for analysis.  
+
+> Time series are used to predict weekly flu rates
+
+## Finance
+> High frequency traders use large quantities to train time series models that trade on the microsecond level. 
+> Long term time series look to model over longer periods (hours, days, months) are still relevant and employed by traditional trading firms.
+
+## Government
+> Government databases, which serve an important purpose of gathering data related to the wellfare of its citizens, are a rich source for time series data.  These databases contain time series related to:
+   - Unemployment
+   - Global warming
+   - Crime (gun crime will be the example of today's lessons)
+
+## A few examples visualized
+
 
 ## Agenda
 
-1. [Time Series Models vs. Linear Models](#section_1)
-2. [Date Time Objects](#section_2)
-3. [Time Series Preprocessing Techniques](#section_3)
+1. [Date Time Objects](#section_2)
+2. [Time Series Preprocessing Techniques](#section_3)
  - [Resampling](#resampling)
- - Interpolating
-4. [Visual Diagnostics](#moving_avg)
- - Moving Average and Exponentially Weighted Moving Average
-5. [Components of Time Series Data and Stationarity](#stationarity)
- - Decomposition
- - Dickey-Fuller
+ - [Interpolating](#interpolation)
+4. [Components of Time Series Data and Stationarity](#stationarity)
+ - [Decomposition](#decomposition)
+ - [Dickey-Fuller](#dickey-fuller)
     
-
-To begin, let's look at some time series data plots.
-
-The ** syntax is used to pass keywords and values in dictionary form to a function. For more on * and ** (*args and **kwargs), see this page.
 
 <a id='section_2'></a>
 
-# 2: Datetime objects
+# 1: Datetime objects
 
 Datetime objects make our time series modeling lives easier.  They will allow us to perform essential data prep tasks with a few lines of code.  
 
-We need our timeseries **index** to be datetime objects, since our models will rely on being able to identify the previous chronological value.
+We need our time series **index** to be datetime objects, since our models will rely on being able to identify the previous chronological value.
 
 There is a datetime [library](https://docs.python.org/2/library/datetime.html), and inside pandas there is a datetime module as well as a to_datetime() function.
 
@@ -180,12 +204,17 @@ ax.set_xlabel('Month')
 
 <a id='section_3'></a>
 
-# 3: Time Series Preprocessing Techniques
+# 2: Time Series Preprocessing Techniques
 
 <a id='resampling'></a>
 
 ## Resampling
 We have new abilities, such as **resampling**
+
+Resampling allows us to zoom in on or zoom out from the time specification associated with data collection.
+
+For example, our gun data is collected with a time stamp including the minute of the incident.  Of course, we will not be interested in predicting the minute a gun crime occured, so we will eventually zoom out from our data.  
+
 
 Take a moment to familiarize yourself with the difference between resampling aliases
 
@@ -239,6 +268,11 @@ When resampling, we have to provide a rule to resample by, and an **aggregate fu
 
 For our purposes, we will downsample, and  count the number of occurences per day.
 
+
+```python
+ts.resample('D').count()
+```
+
 Our time series will consist of a series of counts of gun reports per day.
 
 
@@ -260,7 +294,9 @@ Let's zoom in on that week again
 
 The datetime object allows us several options of how to fill those gaps:
 
-## Forward Fill
+# Forward Fill
+
+A simple way to deal with the missing data is to simply roll forward the most recent entry prior to the gap.
 
 
 ```python
@@ -272,11 +308,15 @@ ts_day[(ts_day.index > '2020-05-20')
 
 ## Backward Fill
 
+We can also fill backward, but doing so is more risky, since you are incorporating future information into prior data.  This is a so-called **lookahead**, which is a type of time series data leakage.  If we backfill, we would expect our models to perform unreasonably well predicting data points whose previous values have been backfilled.
+
 
 ```python
 ts_day[(ts_day.index > '2020-05-20') 
                  & (ts_day.index < '2020-06-07')].bfill()
 ```
+
+<a id='interpolation'></a>
 
 # Interpolate 
 Fills the values according to a specified method. The default linear, assumes the data area evenly spaced along the line connecting the real values surrounding the NaN values.
@@ -287,69 +327,9 @@ ts_day[(ts_day.index > '2020-05-20')
                  & (ts_day.index < '2020-06-07')].interpolate()
 ```
 
-<a id='moving_avg'></a>
-
-# SMA and EWMA
-
-We could also proceed by smoothing our data.
-
-- Smoothing is replacing the measured value on each day with an average of a moving window across near values.  Applying smoothing, with for example a simple moving average an exponentially weighted average, can be used to minimize the effect of outliers. It can then serve as an alternative to dropping outliers to reduce measurement spikes and errors of measurement (Practical Time Series Analysis, Nielson, p. 55)
-
-- Moving averages can also provide a clearer picture of trends in noisy data. 
-
-
-
-# Simple Moving Average
-
-A simple moving average consists of an average across a specified window of time. 
-
-The datetime index allows us to calculate simple moving averages via the rolling function.
-
-The rolling function calculates a statistic across a moving **window**, which we can change with the window paraamter.
-
-
-```python
-ts_to_smooth.rolling(window=7)
-```
-
-The rolling method requires we specify an aggregate function. For moving average, we call mean.
-
-This is simply the avarage of a datapoint and the previous seven data points:
-
-If we increase the window even more, the data **smooths** out in a way to help visualize the underlying seasonal pattern. 
-
-If we plot the moving average across 365 days, we can see a smooth trend across a year.  The SMA reaches back 365 weeks, showing that the steepest growth of gun crime started around the beginning of 2016 and leveled out at the beginning of 2017.
-
-# EWMA
-## Exponentially Weighted Moving Average 
-
-An alternative to SMA is the EWMA. The exponentially weighted average gives more weight to the points closer to the date in question.  With EWMA, the average will track more closely to the peaks and valleys. If there are extreme historical values in the dataset, the EWMA will be less skewed than the SMA.
-
-
-$\large X_{t} = \beta * X_{t-1} * (1-\beta)*X_t$
-
-Which after recursion, breaks resolves into:
-
-$\large \beta^3 * X_{t-3} + \beta^2 * X_{t-2} + \beta * X_{t-1}+ (1-\beta)*X_t$
-
-For this equation, X_t gives us an approximation of the last $1/(1-\beta)$ days.
-
->Andrew Ng, [EWMA](https://www.coursera.org/learn/deep-neural-network/lecture/duStO/exponentially-weighted-averages)
-
-The higher the $\alpha$ parameter, the closer the EWMA will be to the actual value of the point.
-
-Let's plot our rolling statistics with some different windows
-
-Again, if we zoom in to the year level, we can see peaks and valleys according to the seasons.  
-
-We can also plot rolling averages for the variance and standard deviation.
-
-If we zoom in on our standard deviation, we can the variance of our data has quite a fluctuation at different moments in time.  When we are building our models, we will want to remove this variability, or our models will have different performance at different times.  We will be unable, then to be confident our model will perform well at an arbitrary point in the future.
-
-
 <a id='stationarity'></a>
 
-### Components of Time Series Data
+## Components of Time Series Data
 A time series in general is supposed to be affected by four main components, which can be separated from the observed data. These components are: *Trend, Cyclical, Seasonal and Irregular* components.
 
 - **Trend** : The long term movement of a time series. For example, series relating to population growth, number of houses in a city etc. show upward trend.
@@ -361,16 +341,6 @@ A time series in general is supposed to be affected by four main components, whi
 *Note: Many people confuse cyclic behaviour with seasonal behaviour, but they are really quite different. If the fluctuations are not of fixed period then they are cyclic; if the period is unchanging and associated with some aspect of the calendar, then the pattern is seasonal.*
 
 The statsmodels seasonal decompose can also help show us the trends in our data.
-
-Our modeling will aim to predict the weekly gun crime counts.
-We will treat the outliers with interpolated interpolation.
-
-
-```python
-ts_weekly = ts_int.resample('W').mean()
-```
-
-We can now use the seasonal_decompose function to show trends the components of our time series.
 
 ### Statistical stationarity: 
 
@@ -396,6 +366,43 @@ A **stationary time series** is one whose statistical properties such as mean, v
 
 <img src='img/covariance_nonstationary.webp'/>
 
+Noise makes it difficult to see patterns in our time series. We can use **smoothing** techniques to see the patterns more clearly.
+
+Common smoothing techniques are simple moving averages and exponentially weighted moving averages.  
+
+ - Simple moving average simply calculates the average of a specified number of points close to the point in question.
+ - Exponentially weighted average does the same thing, but gives more weight to points closer in time.
+
+Our modeling will aim to predict the weekly gun crime counts.
+We will treat the outliers with interpolated interpolation.
+
+
+```python
+ts_weekly = ts_int.resample('W').mean()
+```
+
+We can call the rolling function plus an aggregate (mean) to calculate the simple moving average.
+
+
+```python
+ts_weekly.rolling(16).mean()
+```
+
+
+```python
+
+fig, ax = plt.subplots(figsize=(10,5))
+
+ts_weekly.rolling(16).mean().plot(ax=ax, label='16 Week SMA')
+ts_weekly.plot(ax=ax, alpha=.5, label='Original Data')
+ax.set_title("16 Week SMA Shows Seasonality")
+ax.legend();
+```
+
+We can also use the seasonal_decompose function to show trends the components of our time series.
+
+<a id='decomposition'></a>
+
 While we can get a sense of how stationary our data is with visuals, the Dickey Fuller test gives us a quantitatitive measure.
 
 Here the null hypothesis is that the TS is non-stationary. If the ‘Test Statistic’ is less than the ‘Critical Value’, we can reject the null hypothesis and say that the series is stationary.
@@ -408,7 +415,7 @@ A series of steps can be taken to stationarize your data - also known -  as remo
 
 
 One way to remove trends is to difference our data.  
-Differencing is performed by subtracting the previous observation (lag=1) from the current observation.
+Differencing is performed by subtracting the previous observation (lag=1) from the current observation, thereby creating a timeseries of differences.  
 
 
 ```python
@@ -421,6 +428,8 @@ ts_weekly.diff().dropna().plot()
 ```
 
 Sometimes, we have to difference the differenced data (known as a second difference) to achieve stationary data. <b>The number of times we have to difference our data is the order of differencing</b> - we will use this information when building our model.
+
+<a id='dickey-fuller'></a>
 
 Let's difference our data and see if it improves Dickey-Fuller Test
 
