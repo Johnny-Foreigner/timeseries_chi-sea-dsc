@@ -16,9 +16,6 @@ from src.student_list import student_first_names
 one_random_student(student_first_names)
 ```
 
-    William
-
-
 <a id='section_1'></a>
 
 # Time Series vs. Linear
@@ -44,7 +41,7 @@ For more information visit http://www.statsmodels.org/stable/endog_exog.html
 
 
 ## Healthcare
-> With new methods of personalized data collection, the opportunity for time series analysis is growing.  Take health care,  where new wearable technology is producing individualized records of medical data. With a smartwatch or phone, heartrate, bloodpressure, sleep and activity records, can all be recorded easily. All of these datapoints can be timestamped precisely, and easily exported for analysis.  
+> With new methods of personalized data collection, the opportunity for time series analysis is growing.  Take health care,  where new wearable technology is producing individualized records of medical data. With a smartwatch or phone, heart rate, blood pressure, sleep and activity records, can all be recorded easily. All of these datapoints can be timestamped precisely, and easily exported for analysis.  
 
 > Time series are used to predict weekly flu rates
 
@@ -134,8 +131,9 @@ for i, trend_df in enumerate(trend_dfs):
 ```
 
 
-![png](index_files/index_19_0.png)
-
+```python
+one_random_student(student_first_names)
+```
 
 ## Agenda
 
@@ -182,9 +180,6 @@ Let's look at some summary stats:
 print(f"There are {ts.shape[0]} records in our timeseries")
 ```
 
-    There are 85267 records in our timeseries
-
-
 
 ```python
 import matplotlib.pyplot as plt
@@ -204,17 +199,6 @@ fig, ax = plt.subplots()
 sns.barplot(height, offense_names, color='r', ax=ax)
 ax.set_title('Mostly Handgun offenses')
 ```
-
-
-
-
-    Text(0.5, 1.0, 'Mostly Handgun offenses')
-
-
-
-
-![png](index_files/index_30_1.png)
-
 
 
 ```python
@@ -237,10 +221,6 @@ ax.set_title("Overwhelmingly Non-Domestic Offenses");
 ```
 
 
-![png](index_files/index_32_0.png)
-
-
-
 ```python
 # Look at the arrest rates by taking the value counts of the Arrest feature
 arrest_rate = None
@@ -260,10 +240,6 @@ sns.barplot( ts['Arrest'].value_counts().index,
 ax.set_title(f'{arrest_rate: .2%} of Total Cases\n Result in Arrest');
 ```
 
-
-![png](index_files/index_34_0.png)
-
-
 The data extracts the year of offense as its own columns.
 
 
@@ -277,10 +253,6 @@ sns.barplot( ts['Year'].value_counts().index,
 ax.set_title("Offenses By Year");
 ```
 
-
-![png](index_files/index_36_0.png)
-
-
 While this does show some interesting information that will be relevant to our time series analysis, we are going to get more granular.
 
 # Date Time Objects
@@ -291,9 +263,6 @@ For time series modeling, the first step is to make sure that the index is a dat
 ```python
 print(f"The original data, if we import with standard read_csv, is a {type(ts.index)}")
 ```
-
-    The original data, if we import with standard read_csv, is a <class 'pandas.core.indexes.range.RangeIndex'>
-
 
 There are a few ways to **reindex** our series to datetime. 
 
@@ -316,9 +285,6 @@ ts =  pd.read_csv('data/Gun_Crimes_Heat_Map.csv', index_col='Date', parse_dates=
 ```python
 print(f"Now our index is a {type(ts.index)}")
 ```
-
-    Now our index is a <class 'pandas.core.indexes.datetimes.DatetimeIndex'>
-
 
 We've covered some of the fun abilities of datetime objects, including being able to extract components of the date like so:
 
@@ -355,15 +321,6 @@ ts.business_hours.value_counts()
 ```
 
 
-
-
-    False    60863
-    True     24404
-    Name: business_hours, dtype: int64
-
-
-
-
 ```python
 fig, ax = plt.subplots()
 bh_ratio = ts.business_hours.value_counts()[1]/len(ts)
@@ -374,17 +331,6 @@ sns.barplot(x=x, y=y)
 
 ax.set_title(f'{bh_ratio: .2%} of Offenses\n Happen Btwn 9 and 5')
 ```
-
-
-
-
-    Text(0.5, 1.0, ' 28.62% of Offenses\n Happen Btwn 9 and 5')
-
-
-
-
-![png](index_files/index_52_1.png)
-
 
 ### With a partner, take five minutes ot play around with the datetime object, and make a plot that answers a time based question about our data.
 
@@ -492,25 +438,6 @@ ts_day = None
 ts_day
 ```
 
-
-
-
-    Date
-    2014-01-01    50
-    2014-01-02    33
-    2014-01-03    24
-    2014-01-04    32
-    2014-01-05    17
-                  ..
-    2020-06-21    52
-    2020-06-22    66
-    2020-06-23    48
-    2020-06-24    58
-    2020-06-25    46
-    Freq: D, Name: ID, Length: 2368, dtype: int64
-
-
-
 Let's visualize our timeseries with a plot.
 
 
@@ -523,17 +450,6 @@ ax.set_title('Gun Crimes per day in Chicago')
 ax.set_ylabel('Reported Gun Crimes')
 ```
 
-
-
-
-    Text(0, 0.5, 'Reported Gun Crimes')
-
-
-
-
-![png](index_files/index_74_1.png)
-
-
 There seems to be some abnormal activity happening towards the end of our series.
 
 **[sun-times](https://chicago.suntimes.com/crime/2020/6/8/21281998/chicago-deadliest-day-violence-murder-history-police-crime)**
@@ -542,24 +458,6 @@ There seems to be some abnormal activity happening towards the end of our series
 ```python
 ts_day.sort_values(ascending=False)[:10]
 ```
-
-
-
-
-    Date
-    2020-05-31    130
-    2020-06-02    109
-    2020-06-01     97
-    2020-06-03     95
-    2020-05-25     93
-    2020-06-20     82
-    2020-05-24     77
-    2018-05-28     74
-    2019-05-26     72
-    2019-07-20     72
-    Name: ID, dtype: int64
-
-
 
 Let's treat the span of days from 5-31 to 6-03 as outliers. 
 
@@ -593,10 +491,6 @@ ts_day.plot(ax=ax)
 ax.set_title('Gun Crimes in Chicago with Deadliest Days Removed');
 ```
 
-
-![png](index_files/index_79_0.png)
-
-
 Let's zoom in on that week again
 
 
@@ -609,17 +503,6 @@ ax.tick_params(rotation=45)
 ax.set_title('We have some gaps now')
 ```
 
-
-
-
-    Text(0.5, 1.0, 'We have some gaps now')
-
-
-
-
-![png](index_files/index_81_1.png)
-
-
 The datetime object allows us several options of how to fill those gaps:
 
 
@@ -627,30 +510,6 @@ The datetime object allows us several options of how to fill those gaps:
 ts_day[(ts_day.index > '2020-05-20') 
                  & (ts_day.index < '2020-06-07')]
 ```
-
-
-
-
-    2020-05-21    46.0
-    2020-05-22    48.0
-    2020-05-23    68.0
-    2020-05-24    77.0
-    2020-05-25     NaN
-    2020-05-26    56.0
-    2020-05-27    47.0
-    2020-05-28    58.0
-    2020-05-29    54.0
-    2020-05-30    51.0
-    2020-05-31     NaN
-    2020-06-01     NaN
-    2020-06-02     NaN
-    2020-06-03     NaN
-    2020-06-04    64.0
-    2020-06-05    60.0
-    2020-06-06    59.0
-    Freq: D, dtype: float64
-
-
 
 # Forward Fill
 
@@ -662,30 +521,6 @@ A simple way to deal with the missing data is to simply roll forward the most re
 ts_day[(ts_day.index > '2020-05-20') 
                  & (ts_day.index < '2020-06-07')]
 ```
-
-
-
-
-    2020-05-21    46.0
-    2020-05-22    48.0
-    2020-05-23    68.0
-    2020-05-24    77.0
-    2020-05-25     NaN
-    2020-05-26    56.0
-    2020-05-27    47.0
-    2020-05-28    58.0
-    2020-05-29    54.0
-    2020-05-30    51.0
-    2020-05-31     NaN
-    2020-06-01     NaN
-    2020-06-02     NaN
-    2020-06-03     NaN
-    2020-06-04    64.0
-    2020-06-05    60.0
-    2020-06-06    59.0
-    Freq: D, dtype: float64
-
-
 
 
 ```python
@@ -705,17 +540,6 @@ ax2.set_title('Original')
 
 ```
 
-
-
-
-    Text(0.5, 1.0, 'Original')
-
-
-
-
-![png](index_files/index_87_1.png)
-
-
 ## Backward Fill
 
 We can also fill backward, but doing so is more risky, since you are incorporating future information into prior data.  This is a so-called **lookahead**, which is a type of time series data leakage.  If we backfill, we would expect our models to perform unreasonably well predicting data points whose previous values have been backfilled.
@@ -727,30 +551,6 @@ We can also fill backward, but doing so is more risky, since you are incorporati
 ts_day[(ts_day.index > '2020-05-20') 
                  & (ts_day.index < '2020-06-07')]
 ```
-
-
-
-
-    2020-05-21    46.0
-    2020-05-22    48.0
-    2020-05-23    68.0
-    2020-05-24    77.0
-    2020-05-25     NaN
-    2020-05-26    56.0
-    2020-05-27    47.0
-    2020-05-28    58.0
-    2020-05-29    54.0
-    2020-05-30    51.0
-    2020-05-31     NaN
-    2020-06-01     NaN
-    2020-06-02     NaN
-    2020-06-03     NaN
-    2020-06-04    64.0
-    2020-06-05    60.0
-    2020-06-06    59.0
-    Freq: D, dtype: float64
-
-
 
 
 ```python
@@ -768,17 +568,6 @@ ax2.tick_params(rotation=45)
 ax2.set_title('Original')
 ```
 
-
-
-
-    Text(0.5, 1.0, 'Original')
-
-
-
-
-![png](index_files/index_91_1.png)
-
-
 <a id='interpolation'></a>
 
 # Interpolate 
@@ -790,30 +579,6 @@ Fills the values according to a specified method. The default linear, assumes th
 ts_day[(ts_day.index > '2020-05-20') 
                  & (ts_day.index < '2020-06-07')]
 ```
-
-
-
-
-    2020-05-21    46.0
-    2020-05-22    48.0
-    2020-05-23    68.0
-    2020-05-24    77.0
-    2020-05-25     NaN
-    2020-05-26    56.0
-    2020-05-27    47.0
-    2020-05-28    58.0
-    2020-05-29    54.0
-    2020-05-30    51.0
-    2020-05-31     NaN
-    2020-06-01     NaN
-    2020-06-02     NaN
-    2020-06-03     NaN
-    2020-06-04    64.0
-    2020-06-05    60.0
-    2020-06-06    59.0
-    Freq: D, dtype: float64
-
-
 
 
 ```python
@@ -830,17 +595,6 @@ ax2.plot(ts_day[(ts_day.index > '2020-05-20')
 ax2.tick_params(rotation=45)
 ax2.set_title('Original')
 ```
-
-
-
-
-    Text(0.5, 1.0, 'Original')
-
-
-
-
-![png](index_files/index_95_1.png)
-
 
 <a id='components'></a>
 
@@ -882,14 +636,6 @@ fig = decomposition.plot()
 fig.set_size_inches(15, 8)
 ```
 
-
-    <Figure size 432x288 with 0 Axes>
-
-
-
-![png](index_files/index_104_1.png)
-
-
 We can also get a sense of the patterns in our data using **smoothing**. Noise makes it difficult to see patterns in our time series. Smoothing techniques to see the patterns more clearly.
 
 Common smoothing techniques are simple moving averages and exponentially weighted moving averages.  
@@ -917,14 +663,6 @@ ax.legend();
 ```
 
 
-      File "<ipython-input-86-b59af50b0fe7>", line 5
-        ts_weekly<fill_in>.plot(ax=ax, label='16 Week SMA')
-                          ^
-    SyntaxError: invalid syntax
-
-
-
-
 ```python
 # if we look at the sma across 52 weeks, we can see a clear trend upwards
 # This is a clear display of how gun crime increases in the summer months 
@@ -935,14 +673,6 @@ ts_weekly.plot(ax=ax, alpha=.5, label='Original Data')
 ax.set_title("52 Week SMA Shows Trend Upwards though 2017,\n then Slight Decrease Thereafter ")
 ax.legend();
 ```
-
-
-      File "<ipython-input-88-516ab18ce490>", line 5
-        ts_weekly<fill_in>.plot(ax=ax, label='52 Week SMA')
-                          ^
-    SyntaxError: invalid syntax
-
-
 
 <a id='stationarity'></a>
 
@@ -1009,21 +739,6 @@ def test_stationarity(timeseries, window):
 test_stationarity(ts_weekly, 52)
 ```
 
-
-![png](index_files/index_120_0.png)
-
-
-    Results of Dickey-Fuller Test:
-    Test Statistic                  -2.562238
-    p-value                          0.101056
-    #Lags Used                       4.000000
-    Number of Observations Used    334.000000
-    Critical Value (1%)             -3.450081
-    Critical Value (5%)             -2.870233
-    Critical Value (10%)            -2.571401
-    dtype: float64
-
-
 As we concluded visually, our original timeseries does not pass the test of stationarity.
 
 ### How to stationarize time series data
@@ -1046,23 +761,6 @@ Differencing is performed by subtracting the previous observation (lag=1) from t
 
 ```
 
-
-```python
-ts_weekly.diff(2).dropna()[:5]
-```
-
-
-
-
-    2014-01-19   -6.628571
-    2014-01-26    5.571429
-    2014-02-02   -2.285714
-    2014-02-09   -7.428571
-    2014-02-16   -6.142857
-    Freq: W-SUN, dtype: float64
-
-
-
 Sometimes, we have to difference the differenced data (known as a second difference) to achieve stationary data. <b>The number of times we have to difference our data is the order of differencing</b> - we will use this information when building our model.
 
 
@@ -1073,40 +771,11 @@ ts_weekly.diff().diff().dropna()[:5]
 ```
 
 
-
-
-    2014-01-19    17.771429
-    2014-01-26    -5.571429
-    2014-02-02    -2.285714
-    2014-02-09    -2.857143
-    2014-02-16     4.142857
-    Freq: W-SUN, dtype: float64
-
-
-
-
 ```python
 # We can also apply seasonal differences by passing 52, i.e. the number of weeks in a year. 
     
 ts_weekly.diff(52).dropna()[:10]
 ```
-
-
-
-
-    2015-01-04   -3.771429
-    2015-01-11    1.571429
-    2015-01-18    0.428571
-    2015-01-25    6.428571
-    2015-02-01   -0.285714
-    2015-02-08    1.142857
-    2015-02-15    0.714286
-    2015-02-22    2.714286
-    2015-03-01    3.714286
-    2015-03-08    5.857143
-    Freq: W-SUN, dtype: float64
-
-
 
 <a id='dickey-fuller'></a>
 
@@ -1114,56 +783,7 @@ Let's difference our data and see if it improves Dickey-Fuller Test
 
 
 ```python
-from statsmodels.tsa.stattools import adfuller
-
-#create a function that will help us to quickly 
-def test_stationarity(timeseries, window):
-    
-    #Determing rolling statistics
-    rolmean = timeseries.rolling(window=window).mean()
-    rolstd = timeseries.rolling(window=window).std()
-
-    #Plot rolling statistics:
-    fig = plt.figure(figsize=(12, 8))
-    orig = plt.plot(timeseries.iloc[window:], color='blue',label='Original')
-    mean = plt.plot(rolmean, color='red', label='Rolling Mean')
-    std = plt.plot(rolstd, color='black', label = 'Rolling Std')
-    plt.legend(loc='best')
-    plt.title('Rolling Mean & Standard Deviation')
-    plt.show()
-    
-    #Perform Dickey-Fuller test:
-    print ('Results of Dickey-Fuller Test:')
-    dftest = adfuller(timeseries, autolag='AIC')
-    dfoutput = pd.Series(dftest[0:4], index=['Test Statistic','p-value','#Lags Used','Number of Observations Used'])
-    for key,value in dftest[4].items():
-        dfoutput['Critical Value (%s)'%key] = value
-    print (dfoutput)
-
-```
-
-
-```python
 test_stationarity(ts_weekly.diff().dropna(), 52)
 ```
 
-
-![png](index_files/index_134_0.png)
-
-
-    Results of Dickey-Fuller Test:
-    Test Statistic                -1.322052e+01
-    p-value                        1.003933e-24
-    #Lags Used                     3.000000e+00
-    Number of Observations Used    3.340000e+02
-    Critical Value (1%)           -3.450081e+00
-    Critical Value (5%)           -2.870233e+00
-    Critical Value (10%)          -2.571401e+00
-    dtype: float64
-
-
 One we have achieved stationarity the next step in fitting a model to address any autocorrelation that remains in the differenced series. 
-
-Sometimes, we have to difference the differenced data (known as a second difference) to achieve stationary data. <b>The number of times we have to difference our data is the order of differencing</b> - we will use this information when building our model.
-
-One we have achieved stationarity the next step in fitting a model is to address any autocorrelation that remains in the differenced series. 
